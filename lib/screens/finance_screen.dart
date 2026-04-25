@@ -62,9 +62,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   // Monthly totals for bar chart (last 6 months)
   List<MapEntry<String, double>> get _monthlyTotals {
     final result = <MapEntry<String, double>>[];
+    final now = DateTime.now();
     for (int i = 5; i >= 0; i--) {
-      final m = DateTime(_today.year, _today.month - i, 1);
-      final mEnd = DateTime(_today.year, _today.month - i + 1, 0, 23, 59, 59);
+      // Dart handles month underflow correctly: DateTime(2025, -1, 1) → Nov 2024
+      final m = DateTime(now.year, now.month - i, 1);
+      final mEnd = DateTime(now.year, now.month - i + 1, 0, 23, 59, 59);
       final label = DateFormat('MMM', 'id_ID').format(m);
       result.add(MapEntry(label, _sumInRange(m, mEnd)));
     }
@@ -408,18 +410,6 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       case IncomeCategory.service: return Icons.handyman_rounded;
       case IncomeCategory.product: return Icons.inventory_2_rounded;
       case IncomeCategory.other: return Icons.more_horiz_rounded;
-    }
-  }
-}
-
-// Extension for categoryLabel used in list context
-extension on IncomeCategory {
-  String get categoryLabel {
-    switch (this) {
-      case IncomeCategory.project: return 'Proyek';
-      case IncomeCategory.service: return 'Jasa';
-      case IncomeCategory.product: return 'Produk';
-      case IncomeCategory.other: return 'Lainnya';
     }
   }
 }

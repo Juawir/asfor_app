@@ -1,5 +1,16 @@
 enum IncomeCategory { project, service, product, other }
 
+extension IncomeCategoryExt on IncomeCategory {
+  String get categoryLabel {
+    switch (this) {
+      case IncomeCategory.project: return 'Proyek';
+      case IncomeCategory.service: return 'Jasa';
+      case IncomeCategory.product: return 'Produk';
+      case IncomeCategory.other: return 'Lainnya';
+    }
+  }
+}
+
 class Income {
   final String id;
   final String description;
@@ -15,12 +26,6 @@ class Income {
     required this.category,
   });
 
-  String get categoryLabel {
-    switch (category) {
-      case IncomeCategory.project: return 'Proyek';
-      case IncomeCategory.service: return 'Jasa';
-      case IncomeCategory.product: return 'Produk';
-      case IncomeCategory.other: return 'Lainnya';
-    }
-  }
+  // Convenience accessor
+  String get categoryLabel => category.categoryLabel;
 }
