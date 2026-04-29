@@ -2,26 +2,58 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
-import '../data/dummy_data.dart';
 import '../models/report.dart';
 import '../models/task.dart';
 import '../services/auth_service.dart';
+import '../services/report_service.dart';
+import '../services/task_service.dart';
 import '../widgets/stat_card.dart';
 import 'main_screen.dart' show mainScaffoldKey;
 import 'report_detail_screen.dart';
 
-class DashboardScreen extends StatelessWidget {
+class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
 
   @override
+  State<DashboardScreen> createState() => _DashboardScreenState();
+}
+
+class _DashboardScreenState extends State<DashboardScreen> {
+  List<Report> _reports = [];
+  List<Task> _tasks = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final reports = await ReportService().getReports();
+    final tasks = await TaskService().getTasks();
+    if (mounted) {
+      setState(() {
+        _reports = reports;
+        _tasks = tasks;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+    }
+    
     final auth = AuthService();
     final user = auth.currentUser;
     final isAdmin = auth.isSuperAdmin;
     final userDiv = user?.division ?? '';
 
-    final reports = isAdmin ? dummyReports : dummyReports.where((r) => r.division == userDiv).toList();
-    final tasks = isAdmin ? dummyTasks : dummyTasks.where((t) => t.division == userDiv).toList();
+    final reports = isAdmin ? _reports : _reports.where((r) => r.division == userDiv).toList();
+    final tasks = isAdmin ? _tasks : _tasks.where((t) => t.division == userDiv).toList();
     final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final totalBudget = reports.where((r) => r.status == ReportStatus.approved).fold<double>(0, (s, r) => s + r.budget);
     final pending = reports.where((r) => r.status == ReportStatus.pending).length;
@@ -75,7 +107,7 @@ class DashboardScreen extends StatelessWidget {
         SliverPadding(padding: const EdgeInsets.all(16), sliver: SliverList(delegate: SliverChildListDelegate([
           GridView.count(
             crossAxisCount: 2, shrinkWrap: true, physics: const NeverScrollableScrollPhysics(),
-            crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.3,
+            crossAxisSpacing: 12, mainAxisSpacing: 12, childAspectRatio: 1.1,
             children: [
               StatCard(label: 'Total Laporan', value: '${reports.length}', icon: Icons.description_rounded, color: AppColors.primary),
               if (isAdmin || userDiv == 'Bidang Usaha')
@@ -90,10 +122,10 @@ class DashboardScreen extends StatelessWidget {
             Text('Laporan per Divisi', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
             const SizedBox(height: 12),
             ...AppTheme.divisions.map((div) {
-              final count = dummyReports.where((r) => r.division == div).length;
-              final approved = dummyReports.where((r) => r.division == div && r.status == ReportStatus.approved).length;
+              final count = _reports.where((r) => r.division == div).length;
+              final approved = _reports.where((r) => r.division == div && r.status == ReportStatus.approved).length;
               final color = AppColors.getDivisionColor(div);
-              final pct = dummyReports.isEmpty ? 0.0 : count / dummyReports.length;
+              final pct = _reports.isEmpty ? 0.0 : count / _reports.length;
               return Container(
                 margin: const EdgeInsets.only(bottom: 10),
                 padding: const EdgeInsets.all(14),

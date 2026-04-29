@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
-import '../models/task.dart';
-import '../data/dummy_data.dart';
+
 import 'dashboard_screen.dart';
 import 'report_list_screen.dart';
 import 'create_report_screen.dart';
@@ -11,6 +10,7 @@ import 'task_screen.dart';
 import 'admin_screen.dart';
 import 'settings_screen.dart';
 import 'finance_screen.dart';
+import 'election_screen.dart';
 import 'login_screen.dart';
 
 // Global key so child screens can open the drawer
@@ -65,88 +65,11 @@ class _MainScreenState extends State<MainScreen> {
       case 4: return const AdminScreen();
       case 5: return const SettingsScreen();
       case 6: return const FinanceScreen();
+      case 7: return const ElectionScreen();
       default: return const DashboardScreen();
     }
   }
 
-  void _showAddTask() {
-    final isAdmin = _auth.isSuperAdmin;
-    String? div = isAdmin ? null : _auth.currentUser?.division;
-    final titleCtrl = TextEditingController();
-    final descCtrl = TextEditingController();
-    final assigneeCtrl = TextEditingController();
-    TaskPriority priority = TaskPriority.medium;
-
-    showModalBottomSheet(
-      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
-        return Container(
-          padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
-            const SizedBox(height: 16),
-            Text('Tambah Tugas Baru', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
-            const SizedBox(height: 4),
-            Text('Buat tugas baru untuk divisi Anda', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
-            const SizedBox(height: 16),
-            TextField(controller: titleCtrl, decoration: const InputDecoration(hintText: 'Judul tugas', prefixIcon: Icon(Icons.task_rounded)), style: GoogleFonts.inter(fontSize: 14)),
-            const SizedBox(height: 12),
-            TextField(controller: descCtrl, maxLines: 2, decoration: const InputDecoration(hintText: 'Deskripsi singkat', prefixIcon: Icon(Icons.description_rounded)), style: GoogleFonts.inter(fontSize: 14)),
-            const SizedBox(height: 12),
-            TextField(controller: assigneeCtrl, decoration: const InputDecoration(hintText: 'Ditugaskan kepada', prefixIcon: Icon(Icons.person_rounded)), style: GoogleFonts.inter(fontSize: 14)),
-            const SizedBox(height: 12),
-            if (isAdmin)
-              DropdownButtonFormField<String>(
-                initialValue: div,
-                items: AppTheme.divisions.map((d) => DropdownMenuItem(value: d, child: Row(children: [
-                  Icon(AppColors.getDivisionIcon(d), size: 18, color: AppColors.getDivisionColor(d)),
-                  const SizedBox(width: 10), Text(d, style: GoogleFonts.inter(fontSize: 14)),
-                ]))).toList(),
-                onChanged: (v) => setSheetState(() => div = v),
-                decoration: const InputDecoration(hintText: 'Pilih divisi', prefixIcon: Icon(Icons.group_rounded)),
-                style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
-              ),
-            if (isAdmin) const SizedBox(height: 12),
-            Text('Prioritas', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            Row(children: TaskPriority.values.map((p) {
-              final selected = priority == p;
-              final color = p == TaskPriority.high ? AppColors.danger : p == TaskPriority.medium ? AppColors.warning : AppColors.success;
-              final label = p == TaskPriority.high ? 'Tinggi' : p == TaskPriority.medium ? 'Sedang' : 'Rendah';
-              return Expanded(child: GestureDetector(
-                onTap: () => setSheetState(() => priority = p),
-                child: Container(
-                  margin: EdgeInsets.only(right: p != TaskPriority.high ? 8 : 0),
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  decoration: BoxDecoration(color: selected ? color.withValues(alpha: 0.12) : AppColors.surfaceAlt, borderRadius: BorderRadius.circular(10), border: Border.all(color: selected ? color : AppColors.border)),
-                  child: Center(child: Text(label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: selected ? color : AppColors.textMuted))),
-                ),
-              ));
-            }).toList()),
-            const SizedBox(height: 16),
-            SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
-              onPressed: () {
-                if (titleCtrl.text.isEmpty || div == null) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Judul dan divisi wajib diisi')));
-                  return;
-                }
-                dummyTasks.add(Task(id: 'T${dummyTasks.length + 1}', title: titleCtrl.text, description: descCtrl.text, division: div!, assignee: assigneeCtrl.text.isEmpty ? 'Belum ditugaskan' : assigneeCtrl.text, dueDate: DateTime.now().add(const Duration(days: 7)), priority: priority, status: TaskStatus.todo));
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: const Text('✅ Tugas berhasil ditambahkan!'), backgroundColor: AppColors.success,
-                  behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ));
-                setState(() {});
-              },
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: Text('Tambah Tugas', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
-            )),
-          ])),
-        );
-      }),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -157,14 +80,7 @@ class _MainScreenState extends State<MainScreen> {
     return Scaffold(
       key: mainScaffoldKey,
       body: _buildCurrentScreen(),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTask,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: const Icon(Icons.add_rounded, size: 28),
-      ),
+
       drawer: Drawer(
         backgroundColor: AppColors.surface,
         shape: const RoundedRectangleBorder(borderRadius: BorderRadius.horizontal(right: Radius.circular(24))),
@@ -192,7 +108,7 @@ class _MainScreenState extends State<MainScreen> {
               const SizedBox(height: 14),
               Text(user?.name ?? '', style: GoogleFonts.inter(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
               const SizedBox(height: 2),
-              Text('@${user?.username ?? ''}', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+              Text('${user?.email ?? ''}', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
               const SizedBox(height: 8),
               Row(children: [
                 Container(
@@ -241,6 +157,7 @@ class _MainScreenState extends State<MainScreen> {
 
             _drawerItem(Icons.add_circle_rounded, 'Buat Laporan', 2),
             _drawerItem(Icons.task_rounded, 'Task Manager', 3),
+            _drawerItem(Icons.how_to_vote_rounded, 'Pemilihan', 7, badge: 'VOTE'),
             const Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Divider(color: AppColors.border)),
 
             if (isAdmin || user?.division == 'Bidang Usaha')

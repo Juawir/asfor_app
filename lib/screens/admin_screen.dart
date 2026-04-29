@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
-import '../services/auth_service.dart';
 import '../models/user.dart';
+import '../services/user_service.dart';
 import 'main_screen.dart' show mainScaffoldKey;
 
 class AdminScreen extends StatefulWidget {
@@ -12,11 +12,28 @@ class AdminScreen extends StatefulWidget {
 }
 
 class _AdminScreenState extends State<AdminScreen> {
-  final _auth = AuthService();
+  List<AppUser> _users = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUsers();
+  }
+
+  Future<void> _fetchUsers() async {
+    final users = await UserService().getUsers();
+    if (mounted) {
+      setState(() {
+        _users = users;
+        _isLoading = false;
+      });
+    }
+  }
 
   void _showAddUser() {
     final nameCtrl = TextEditingController();
-    final usernameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     String? division;
 
@@ -35,7 +52,7 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 20),
             TextField(controller: nameCtrl, decoration: const InputDecoration(hintText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
-            TextField(controller: usernameCtrl, decoration: const InputDecoration(hintText: 'Username', prefixIcon: Icon(Icons.alternate_email_rounded)), style: GoogleFonts.inter(fontSize: 14)),
+            TextField(controller: emailCtrl, decoration: const InputDecoration(hintText: 'Email', prefixIcon: Icon(Icons.email_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
             TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
@@ -51,26 +68,33 @@ class _AdminScreenState extends State<AdminScreen> {
             ),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
-              onPressed: () {
-                if (nameCtrl.text.isEmpty || usernameCtrl.text.isEmpty || passwordCtrl.text.isEmpty || division == null) {
+              onPressed: () async {
+                if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty || division == null) {
                   ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Semua field wajib diisi')));
                   return;
                 }
-                final existing = _auth.allUsers.any((u) => u.username == usernameCtrl.text.trim());
+                final existing = _users.any((u) => u.email == emailCtrl.text.trim());
                 if (existing) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Username sudah digunakan')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Email sudah digunakan')));
                   return;
                 }
-                _auth.addUser(AppUser(
-                  id: _auth.generateUserId(), name: nameCtrl.text.trim(), username: usernameCtrl.text.trim(),
+                
+                final newUser = AppUser(
+                  id: '', name: nameCtrl.text.trim(), email: emailCtrl.text.trim(),
                   password: passwordCtrl.text, division: division!, role: UserRole.user,
-                ));
-                setState(() {});
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: const Text('✅ User berhasil ditambahkan'), backgroundColor: AppColors.success,
-                  behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                ));
+                );
+                
+                final success = await UserService().createUser(newUser);
+                if (success) {
+                  _fetchUsers();
+                  if (mounted) Navigator.pop(ctx);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: const Text('✅ User berhasil ditambahkan'), backgroundColor: AppColors.success,
+                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                } else {
+                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Gagal menambahkan user')));
+                }
               },
               icon: const Icon(Icons.person_add_rounded, size: 18),
               label: Text('Tambah User', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
@@ -89,7 +113,15 @@ class _AdminScreenState extends State<AdminScreen> {
       actions: [
         TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Batal', style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
         ElevatedButton(
-          onPressed: () { _auth.removeUser(user.id); setState(() {}); Navigator.pop(ctx); },
+          onPressed: () async { 
+            Navigator.pop(ctx);
+            final success = await UserService().deleteUser(user.id);
+            if (success) {
+              _fetchUsers();
+            } else {
+              if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Gagal menghapus user')));
+            }
+          },
           style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white),
           child: Text('Hapus', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         ),
@@ -99,7 +131,11 @@ class _AdminScreenState extends State<AdminScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final users = _auth.allUsers;
+    if (_isLoading) {
+      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+    }
+    
+    final users = _users;
     final divGroups = <String, List<AppUser>>{};
     for (final u in users) {
       divGroups.putIfAbsent(u.division, () => []).add(u);
@@ -195,7 +231,7 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                     ],
                   ]),
-                  Text('ID: ${u.id} • @${u.username}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                  Text('ID: ${u.id} • ${u.email}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
                 ])),
                 if (!u.isSuperAdmin)
                   IconButton(

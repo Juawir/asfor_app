@@ -63,11 +63,11 @@ lib/
 
 ## 🔑 Akun Demo (Untuk Pengetesan)
 
-| Role | Username | Password | Divisi |
+| Role | Email | Password | Divisi |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin` | `admin123` | Semua |
-| **Bidang Usaha** | `yoga.aditya` | `pass123` | Bidang Usaha |
-| **Programmer** | `ahmad.fauzi` | `pass123` | Programmer |
+| **Super Admin** | `admin@example.com` | `admin123` | Semua |
+| **Bidang Usaha** | `yoga@example.com` | `pass123` | Bidang Usaha |
+| **Programmer** | `ahmad@example.com` | `pass123` | Programmer |
 
 ---
 

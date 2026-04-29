@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
+import '../models/report.dart';
+import '../services/report_service.dart';
 import 'main_screen.dart' show mainScaffoldKey;
 
 class CreateReportScreen extends StatefulWidget {
@@ -34,15 +36,38 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     if (d != null) setState(() => _selectedDate = d);
   }
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDivision == null) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Pilih divisi terlebih dahulu'))); return; }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Row(children: [const Icon(Icons.check_circle_rounded, color: Colors.white), const SizedBox(width: 8), const Text('Laporan berhasil dibuat!')]),
-      backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
-    _titleCtrl.clear(); _descCtrl.clear(); _budgetCtrl.clear();
-    setState(() { _selectedDivision = null; _attachments.clear(); });
+    
+    final newReport = Report(
+      id: '',
+      title: _titleCtrl.text,
+      description: _descCtrl.text,
+      division: _selectedDivision!,
+      date: _selectedDate,
+      status: ReportStatus.pending,
+      budget: double.tryParse(_budgetCtrl.text) ?? 0.0,
+      submittedBy: _auth.currentUser?.name ?? '',
+      attachments: List.from(_attachments),
+    );
+
+    final success = await ReportService().createReport(newReport);
+
+    if (mounted) {
+      if (success) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Row(children: [const Icon(Icons.check_circle_rounded, color: Colors.white), const SizedBox(width: 8), const Text('Laporan berhasil dibuat!')]),
+          backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ));
+        _titleCtrl.clear(); _descCtrl.clear(); _budgetCtrl.clear();
+        setState(() { _selectedDivision = _auth.isSuperAdmin ? null : _auth.currentUser?.division; _attachments.clear(); });
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Gagal membuat laporan'), backgroundColor: AppColors.danger,
+        ));
+      }
+    }
   }
 
   @override

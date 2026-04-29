@@ -71,4 +71,42 @@ class Task {
       createdAt: createdAt,
     );
   }
+
+  factory Task.fromJson(Map<String, dynamic> json) {
+    TaskPriority getPriority(String? p) {
+      if (p == 'high') return TaskPriority.high;
+      if (p == 'medium') return TaskPriority.medium;
+      return TaskPriority.low;
+    }
+    TaskStatus getStatus(String? s) {
+      if (s == 'done') return TaskStatus.done;
+      if (s == 'inProgress' || s == 'in_progress') return TaskStatus.inProgress;
+      return TaskStatus.todo;
+    }
+    return Task(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      division: json['division'] ?? '',
+      assignee: json['assignee'] ?? '',
+      dueDate: json['due_date'] != null ? DateTime.parse(json['due_date']) : DateTime.now(),
+      priority: getPriority(json['priority']),
+      status: getStatus(json['status']),
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'division': division,
+      'assignee': assignee,
+      'due_date': dueDate.toIso8601String(),
+      'priority': priority.name,
+      'status': status.name,
+      'created_at': createdAt.toIso8601String(),
+    };
+  }
 }
