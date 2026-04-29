@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import 'api_config.dart';
 
 class AuthService {
   static final AuthService _instance = AuthService._internal();
@@ -10,57 +14,106 @@ class AuthService {
   bool get isLoggedIn => _currentUser != null;
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
 
-  final List<AppUser> _users = [
-    // Super Admin
-    const AppUser(id: 'SA001', name: 'Administrator', username: 'admin', password: 'admin123', division: 'Semua', role: UserRole.superadmin),
-
-    // Programmer
-    const AppUser(id: 'U001', name: 'Ahmad Fauzi', username: 'ahmad.fauzi', password: 'pass123', division: 'Programmer', role: UserRole.user),
-    const AppUser(id: 'U002', name: 'Budi Santoso', username: 'budi.santoso', password: 'pass123', division: 'Programmer', role: UserRole.user),
-    const AppUser(id: 'U003', name: 'Rina Wati', username: 'rina.wati', password: 'pass123', division: 'Programmer', role: UserRole.user),
-
-    // Hubungan Masyarakat
-    const AppUser(id: 'U004', name: 'Siti Aisyah', username: 'siti.aisyah', password: 'pass123', division: 'Hubungan Masyarakat', role: UserRole.user),
-    const AppUser(id: 'U005', name: 'Dewi Lestari', username: 'dewi.lestari', password: 'pass123', division: 'Hubungan Masyarakat', role: UserRole.user),
-
-    // IT Support
-    const AppUser(id: 'U006', name: 'Reza Pratama', username: 'reza.pratama', password: 'pass123', division: 'IT Support', role: UserRole.user),
-    const AppUser(id: 'U007', name: 'Fajar Hidayat', username: 'fajar.hidayat', password: 'pass123', division: 'IT Support', role: UserRole.user),
-
-    // Training
-    const AppUser(id: 'U008', name: 'Nadia Putri', username: 'nadia.putri', password: 'pass123', division: 'Training', role: UserRole.user),
-    const AppUser(id: 'U009', name: 'Irfan Maulana', username: 'irfan.maulana', password: 'pass123', division: 'Training', role: UserRole.user),
-
-    // Bidang Usaha
-    const AppUser(id: 'U010', name: 'Yoga Aditya', username: 'yoga.aditya', password: 'pass123', division: 'Bidang Usaha', role: UserRole.user),
-    const AppUser(id: 'U011', name: 'Maya Sari', username: 'maya.sari', password: 'pass123', division: 'Bidang Usaha', role: UserRole.user),
-  ];
-
-  List<AppUser> get allUsers => List.unmodifiable(_users);
-
-  String? login(String username, String password) {
+  Future<String?> login(String email, String password) async {
     try {
-      final user = _users.firstWhere((u) => u.username == username && u.password == password);
-      _currentUser = user;
-      return null; // success
-    } catch (_) {
-      return 'Username atau password salah';
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/login'),
+        headers: await ApiConfig.getHeaders(),
+        body: jsonEncode({
+          'email': email,
+          'password': password,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final token = data['data']['access_token'];
+        
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('token', token);
+        
+        _currentUser = AppUser.fromJson(data['data']['user']);
+        return null; // success
+      } else {
+        final data = jsonDecode(response.body);
+        return data['message'] ?? 'Email atau password salah';
+      }
+    } catch (e) {
+      return 'Terjadi kesalahan koneksi. Pastikan API menyala dan VPN terhubung (error: $e).';
     }
   }
 
-  void logout() { _currentUser = null; }
-
-  void addUser(AppUser user) { _users.add(user); }
-
-  void removeUser(String id) { _users.removeWhere((u) => u.id == id && u.role != UserRole.superadmin); }
-
-  void updateCurrentUser({String? name, String? password}) {
-    if (_currentUser == null) return;
-    final updated = _currentUser!.copyWith(name: name, password: password);
-    final idx = _users.indexWhere((u) => u.id == _currentUser!.id);
-    if (idx >= 0) { _users[idx] = updated; }
-    _currentUser = updated;
+  Future<void> logout() async {
+    try {
+      await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/logout'),
+        headers: await ApiConfig.getHeaders(),
+      );
+    } catch (_) {}
+    
+    _currentUser = null;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('token');
   }
 
-  String generateUserId() => 'U${(_users.length + 1).toString().padLeft(3, '0')}';
+  Future<bool> checkAuth() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    
+    if (token == null) return false;
+    
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/profile'),
+        headers: await ApiConfig.getHeaders(),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        _currentUser = AppUser.fromJson(data['data']);
+        return true;
+      }
+    } catch (_) {}
+    
+    await prefs.remove('token');
+    return false;
+  }
+
+  Future<String?> updateProfile(String name) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/profile'),
+        headers: await ApiConfig.getHeaders(),
+        body: jsonEncode({'name': name}),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        _currentUser = AppUser.fromJson(data['data']);
+        return null;
+      }
+      return jsonDecode(response.body)['message'] ?? 'Gagal update profile';
+    } catch (e) {
+      return 'Koneksi error: $e';
+    }
+  }
+
+  Future<String?> changePassword(String currentPassword, String newPassword) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConfig.baseUrl}/profile/password'),
+        headers: await ApiConfig.getHeaders(),
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'password': newPassword,
+          'password_confirmation': newPassword,
+        }),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return null;
+      }
+      return jsonDecode(response.body)['message'] ?? 'Gagal ubah password';
+    } catch (e) {
+      return 'Koneksi error: $e';
+    }
+  }
 }

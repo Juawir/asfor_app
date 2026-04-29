@@ -71,4 +71,45 @@ class Report {
       attachments: attachments ?? this.attachments,
     );
   }
+
+  factory Report.fromJson(Map<String, dynamic> json) {
+    ReportStatus getStatus(String? s) {
+      if (s == 'pending') return ReportStatus.pending;
+      if (s == 'approved') return ReportStatus.approved;
+      if (s == 'rejected') return ReportStatus.rejected;
+      return ReportStatus.draft;
+    }
+    
+    return Report(
+      id: json['id']?.toString() ?? '',
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      division: json['division'] ?? '',
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      status: getStatus(json['status']),
+      budget: json['budget'] != null ? double.parse(json['budget'].toString()) : 0.0,
+      submittedBy: json['submitted_by'] ?? '',
+      approvedBy: json['approved_by'],
+      approvedAt: json['approved_at'] != null ? DateTime.parse(json['approved_at']) : null,
+      rejectionNote: json['rejection_note'],
+      attachments: json['attachments'] != null ? List<String>.from(json['attachments']) : [],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'division': division,
+      'date': date.toIso8601String(),
+      'status': status.name,
+      'budget': budget,
+      'submitted_by': submittedBy,
+      'approved_by': approvedBy,
+      'approved_at': approvedAt?.toIso8601String(),
+      'rejection_note': rejectionNote,
+      'attachments': attachments,
+    };
+  }
 }

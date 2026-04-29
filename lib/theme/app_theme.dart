@@ -14,6 +14,7 @@ class AppColors {
   static const warning = Color(0xFFF59E0B);
   static const danger = Color(0xFFEF4444);
   static const info = Color(0xFF6366F1);
+  static const election = Color(0xFF7C3AED);
 
   // Surfaces
   static const background = Color(0xFFF1F5F9);
@@ -157,6 +158,17 @@ class AppTheme {
         color: AppColors.border,
         thickness: 1,
         space: 1,
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: AppColors.textPrimary,
+        contentTextStyle: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: Colors.white),
+      ),
+      dialogTheme: DialogThemeData(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titleTextStyle: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+        contentTextStyle: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary),
       ),
     );
   }

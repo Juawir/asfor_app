@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../models/income.dart';
-import '../data/dummy_incomes.dart';
+import '../services/finance_service.dart';
 import 'main_screen.dart' show mainScaffoldKey;
 
 class FinanceScreen extends StatefulWidget {
@@ -15,9 +15,25 @@ class FinanceScreen extends StatefulWidget {
 class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+  List<Income> _allIncomes = [];
+  bool _isLoading = true;
 
   @override
-  void initState() { super.initState(); _tabCtrl = TabController(length: 3, vsync: this); }
+  void initState() {
+    super.initState();
+    _tabCtrl = TabController(length: 3, vsync: this);
+    _fetchIncomes();
+  }
+
+  Future<void> _fetchIncomes() async {
+    final incomes = await FinanceService().getIncomes();
+    if (mounted) {
+      setState(() {
+        _allIncomes = incomes;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   void dispose() { _tabCtrl.dispose(); super.dispose(); }
@@ -32,11 +48,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   DateTime get _startOfLastYear => DateTime(_today.year - 1, 1, 1);
   DateTime get _endOfLastYear => DateTime(_today.year - 1, 12, 31, 23, 59, 59);
 
-  double _sumInRange(DateTime start, DateTime end) => dummyIncomes
+  double _sumInRange(DateTime start, DateTime end) => _allIncomes
     .where((i) => !i.date.isBefore(start) && !i.date.isAfter(end))
     .fold(0.0, (s, i) => s + i.amount);
 
-  List<Income> _inRange(DateTime start, DateTime end) => dummyIncomes
+  List<Income> _inRange(DateTime start, DateTime end) => _allIncomes
     .where((i) => !i.date.isBefore(start) && !i.date.isAfter(end))
     .toList()..sort((a, b) => b.date.compareTo(a.date));
 
@@ -75,6 +91,10 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+    }
+    
     final monthPct = _pctChange(monthIncome, lastMonthIncome);
     final yearPct = _pctChange(yearIncome, lastYearIncome);
 
@@ -176,7 +196,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   // ==================== TAB 2: TRANSAKSI ====================
   Widget _buildTransactions() {
-    final allItems = List<Income>.from(dummyIncomes)..sort((a, b) => b.date.compareTo(a.date));
+    final allItems = List<Income>.from(_allIncomes)..sort((a, b) => b.date.compareTo(a.date));
     if (allItems.isEmpty) {
       return Center(child: Text('Belum ada transaksi', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)));
     }

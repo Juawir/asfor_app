@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
-import '../data/dummy_data.dart';
 import '../models/report.dart';
 import '../services/auth_service.dart';
+import '../services/report_service.dart';
 import '../widgets/report_card.dart';
 import '../widgets/division_chip.dart';
 import 'main_screen.dart' show mainScaffoldKey;
@@ -20,11 +20,24 @@ class _ReportListScreenState extends State<ReportListScreen> {
   late String _selectedDivision;
   String _searchQuery = '';
   final _auth = AuthService();
+  List<Report> _allReports = [];
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _selectedDivision = widget.initialDivisionFilter ?? 'Semua';
+    _fetchReports();
+  }
+
+  Future<void> _fetchReports() async {
+    final reports = await ReportService().getReports();
+    if (mounted) {
+      setState(() {
+        _allReports = reports;
+        _isLoading = false;
+      });
+    }
   }
 
   @override
@@ -38,7 +51,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
   List<Report> get _filteredReports {
     final isAdmin = _auth.isSuperAdmin;
     final userDiv = _auth.currentUser?.division ?? '';
-    return dummyReports.where((r) {
+    return _allReports.where((r) {
       final matchUserDiv = isAdmin || r.division == userDiv;
       final matchFilter = _selectedDivision == 'Semua' || r.division == _selectedDivision;
       final matchSearch = _searchQuery.isEmpty || r.title.toLowerCase().contains(_searchQuery.toLowerCase()) || r.description.toLowerCase().contains(_searchQuery.toLowerCase());
@@ -48,6 +61,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+    }
     final filtered = _filteredReports;
     return Scaffold(
       backgroundColor: AppColors.background,

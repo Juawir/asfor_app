@@ -13,7 +13,7 @@ class SettingsScreen extends StatefulWidget {
 class _SettingsScreenState extends State<SettingsScreen> {
   final _auth = AuthService();
   late TextEditingController _nameCtrl;
-  late TextEditingController _usernameCtrl;
+  late TextEditingController _emailCtrl;
   bool _editingName = false;
   bool _changingPassword = false;
   final _oldPassCtrl = TextEditingController();
@@ -24,29 +24,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void initState() {
     super.initState();
     _nameCtrl = TextEditingController(text: _auth.currentUser?.name ?? '');
-    _usernameCtrl = TextEditingController(text: _auth.currentUser?.username ?? '');
+    _emailCtrl = TextEditingController(text: _auth.currentUser?.email ?? '');
   }
 
   @override
   void dispose() {
     _nameCtrl.dispose();
-    _usernameCtrl.dispose();
+    _emailCtrl.dispose();
     _oldPassCtrl.dispose();
     _newPassCtrl.dispose();
     _confirmPassCtrl.dispose();
     super.dispose();
   }
 
-  void _saveName() {
+  void _saveName() async {
     if (_nameCtrl.text.trim().isEmpty) return;
-    _auth.updateCurrentUser(name: _nameCtrl.text.trim());
-    setState(() => _editingName = false);
-    _showSnack('✅ Nama berhasil diperbarui');
+    
+    // Tampilkan loading (opsional bisa pakai showDialog atau state)
+    final error = await _auth.updateProfile(_nameCtrl.text.trim());
+    if (!mounted) return;
+    
+    if (error == null) {
+      setState(() => _editingName = false);
+      _showSnack('✅ Nama berhasil diperbarui');
+    } else {
+      _showSnack(error, isError: true);
+    }
   }
 
-  void _changePassword() {
-    if (_oldPassCtrl.text != _auth.currentUser?.password) {
-      _showSnack('Password lama salah', isError: true);
+  void _changePassword() async {
+    if (_oldPassCtrl.text.isEmpty) {
+      _showSnack('Password lama wajib diisi', isError: true);
       return;
     }
     if (_newPassCtrl.text.length < 4) {
@@ -57,12 +65,19 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _showSnack('Konfirmasi password tidak cocok', isError: true);
       return;
     }
-    _auth.updateCurrentUser(password: _newPassCtrl.text);
-    setState(() => _changingPassword = false);
-    _oldPassCtrl.clear();
-    _newPassCtrl.clear();
-    _confirmPassCtrl.clear();
-    _showSnack('✅ Password berhasil diubah');
+    
+    final error = await _auth.changePassword(_oldPassCtrl.text, _newPassCtrl.text);
+    if (!mounted) return;
+
+    if (error == null) {
+      setState(() => _changingPassword = false);
+      _oldPassCtrl.clear();
+      _newPassCtrl.clear();
+      _confirmPassCtrl.clear();
+      _showSnack('✅ Password berhasil diubah');
+    } else {
+      _showSnack(error, isError: true);
+    }
   }
 
   void _showSnack(String msg, {bool isError = false}) {
@@ -108,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             Text(user.name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
             const SizedBox(height: 4),
-            Text('@${user.username}', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+            Text('${user.email}', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),

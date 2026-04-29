@@ -28,4 +28,30 @@ class Income {
 
   // Convenience accessor
   String get categoryLabel => category.categoryLabel;
+
+  factory Income.fromJson(Map<String, dynamic> json) {
+    IncomeCategory getCat(String? c) {
+      if (c == 'project') return IncomeCategory.project;
+      if (c == 'service') return IncomeCategory.service;
+      if (c == 'product') return IncomeCategory.product;
+      return IncomeCategory.other;
+    }
+    return Income(
+      id: json['id']?.toString() ?? '',
+      description: json['description'] ?? '',
+      amount: json['amount'] != null ? double.parse(json['amount'].toString()) : 0.0,
+      date: json['date'] != null ? DateTime.parse(json['date']) : DateTime.now(),
+      category: getCat(json['category']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'description': description,
+      'amount': amount,
+      'date': date.toIso8601String(),
+      'category': category.name,
+    };
+  }
 }
