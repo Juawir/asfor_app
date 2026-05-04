@@ -4,6 +4,7 @@ import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../models/report.dart';
 import '../services/report_service.dart';
+import 'package:file_picker/file_picker.dart';
 import 'main_screen.dart' show mainScaffoldKey;
 
 class CreateReportScreen extends StatefulWidget {
@@ -20,7 +21,8 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   final _descCtrl = TextEditingController();
   final _budgetCtrl = TextEditingController();
   DateTime _selectedDate = DateTime.now();
-  final List<String> _attachments = [];
+  String? _pickedFilePath;
+  String? _pickedFileName;
 
   @override
   void initState() {
@@ -49,10 +51,9 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       status: ReportStatus.pending,
       budget: double.tryParse(_budgetCtrl.text) ?? 0.0,
       submittedBy: _auth.currentUser?.name ?? '',
-      attachments: List.from(_attachments),
     );
 
-    final success = await ReportService().createReport(newReport);
+    final success = await ReportService().createReport(newReport, filePath: _pickedFilePath);
 
     if (mounted) {
       if (success) {
@@ -61,7 +62,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ));
         _titleCtrl.clear(); _descCtrl.clear(); _budgetCtrl.clear();
-        setState(() { _selectedDivision = _auth.isSuperAdmin ? null : _auth.currentUser?.division; _attachments.clear(); });
+        setState(() { _selectedDivision = _auth.isSuperAdmin ? null : _auth.currentUser?.division; _pickedFilePath = null; _pickedFileName = null; });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text('Gagal membuat laporan'), backgroundColor: AppColors.danger,
@@ -108,11 +109,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           _label('Divisi'),
           DropdownButtonFormField<String>(
             initialValue: _selectedDivision,
-            items: AppTheme.divisions.map((d) => DropdownMenuItem(value: d, child: Row(children: [
+            items: (_auth.isSuperAdmin ? AppTheme.divisions : [_auth.currentUser?.division ?? ''])
+                .where((d) => d.isNotEmpty).map((d) => DropdownMenuItem(value: d, child: Row(children: [
               Icon(AppColors.getDivisionIcon(d), size: 18, color: AppColors.getDivisionColor(d)),
               const SizedBox(width: 10), Text(d, style: GoogleFonts.inter(fontSize: 14)),
             ]))).toList(),
-            onChanged: (v) => setState(() => _selectedDivision = v),
+            onChanged: _auth.isSuperAdmin ? (v) => setState(() => _selectedDivision = v) : null,
             decoration: const InputDecoration(hintText: 'Pilih divisi', prefixIcon: Icon(Icons.group_rounded)),
             style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
           ),
@@ -152,7 +154,18 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
           // Upload
           _label('Lampiran'),
           GestureDetector(
-            onTap: () => setState(() => _attachments.add('dokumen_${_attachments.length + 1}.pdf')),
+            onTap: () async {
+              FilePickerResult? result = await FilePicker.pickFiles(
+                type: FileType.custom,
+                allowedExtensions: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'],
+              );
+              if (result != null) {
+                setState(() {
+                  _pickedFilePath = result.files.single.path;
+                  _pickedFileName = result.files.single.name;
+                });
+              }
+            },
             child: Container(
               width: double.infinity, padding: const EdgeInsets.symmetric(vertical: 24),
               decoration: BoxDecoration(borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.primary, style: BorderStyle.solid, width: 1.5), color: AppColors.primary.withValues(alpha: 0.04)),
@@ -164,20 +177,20 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ]),
             ),
           ),
-          if (_attachments.isNotEmpty) ...[
+          if (_pickedFileName != null) ...[
             const SizedBox(height: 8),
-            ..._attachments.asMap().entries.map((e) => Container(
+            Container(
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
               child: Row(children: [
                 const Icon(Icons.insert_drive_file_rounded, size: 18, color: AppColors.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text(e.value, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary))),
-                GestureDetector(onTap: () => setState(() => _attachments.removeAt(e.key)),
+                Expanded(child: Text(_pickedFileName!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary))),
+                GestureDetector(onTap: () => setState(() { _pickedFilePath = null; _pickedFileName = null; }),
                   child: const Icon(Icons.close_rounded, size: 18, color: AppColors.danger)),
               ]),
-            )),
+            ),
           ],
           const SizedBox(height: 28),
 

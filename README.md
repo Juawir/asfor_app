@@ -76,9 +76,6 @@ Pastikan aplikasi terhubung ke internet saat mencoba akun ini karena memanggil R
 | Role | Email | Password | Divisi |
 | :--- | :--- | :--- | :--- |
 | **Super Admin** | `admin@example.com` | `password` | Semua |
-| **Bidang Usaha** | `yoga@example.com` | `pass123` | Bidang Usaha |
-| **Programmer** | `ahmad@example.com` | `pass123` | Programmer |
-
 ---
 
 ## 📝 Catatan Pengembangan

@@ -127,25 +127,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               final color = AppColors.getDivisionColor(div);
               final pct = _reports.isEmpty ? 0.0 : count / _reports.length;
               return Container(
-                margin: const EdgeInsets.only(bottom: 10),
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+                margin: const EdgeInsets.only(bottom: 12),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: AppColors.borderLight),
+                  boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
                 child: Column(children: [
                   Row(children: [
-                    Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(10)), child: Icon(AppColors.getDivisionIcon(div), color: color, size: 20)),
-                    const SizedBox(width: 12),
+                    Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: color.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(14)), child: Icon(AppColors.getDivisionIcon(div), color: color, size: 20)),
+                    const SizedBox(width: 14),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                       Text(div, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                      Text('$approved/$count disetujui', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+                      Text('$approved/$count disetujui', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
                     ])),
-                    Text('$count', style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w800, color: color)),
+                    Text('$count', style: GoogleFonts.inter(fontSize: 22, fontWeight: FontWeight.w800, color: color)),
                   ]),
-                  const SizedBox(height: 8),
-                  ClipRRect(borderRadius: BorderRadius.circular(50), child: LinearProgressIndicator(value: pct, minHeight: 6, backgroundColor: AppColors.border, valueColor: AlwaysStoppedAnimation(color))),
+                  const SizedBox(height: 12),
+                  ClipRRect(borderRadius: BorderRadius.circular(50), child: LinearProgressIndicator(value: pct, minHeight: 6, backgroundColor: AppColors.borderLight, valueColor: AlwaysStoppedAnimation(color))),
                 ]),
               );
             }),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
           ],
 
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
@@ -155,7 +160,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (reports.isEmpty)
             Container(
               padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+              decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.borderLight)),
               child: Center(child: Text('Belum ada laporan', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted))),
             )
           else
@@ -178,18 +183,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return GestureDetector(
       onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ReportDetailScreen(report: r))),
       child: Container(
-        margin: const EdgeInsets.only(bottom: 8),
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.borderLight),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.02), blurRadius: 8, offset: const Offset(0, 2))],
+        ),
         child: Row(children: [
           Container(width: 4, height: 40, decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(4))),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(r.title, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 2),
-            Text('${r.division} • ${DateFormat('dd MMM', 'id_ID').format(r.date)}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+            Text(r.title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const SizedBox(height: 4),
+            Text('${r.division} • ${DateFormat('dd MMM', 'id_ID').format(r.date)}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary)),
           ])),
-          Container(width: 8, height: 8, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
+          Container(width: 10, height: 10, decoration: BoxDecoration(color: statusColor, shape: BoxShape.circle)),
         ]),
       ),
     );

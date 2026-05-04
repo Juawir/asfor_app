@@ -17,6 +17,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   final fmt = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
   List<Income> _allIncomes = [];
   bool _isLoading = true;
+  String _txFilter = 'all'; // all, income, expense
 
   @override
   void initState() {
@@ -48,19 +49,23 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   DateTime get _startOfLastYear => DateTime(_today.year - 1, 1, 1);
   DateTime get _endOfLastYear => DateTime(_today.year - 1, 12, 31, 23, 59, 59);
 
-  double _sumInRange(DateTime start, DateTime end) => _allIncomes
-    .where((i) => !i.date.isBefore(start) && !i.date.isAfter(end))
+  double _sumByType(DateTime start, DateTime end, FinanceType type) => _allIncomes
+    .where((i) => i.type == type && !i.date.isBefore(start) && !i.date.isAfter(end))
     .fold(0.0, (s, i) => s + i.amount);
 
   List<Income> _inRange(DateTime start, DateTime end) => _allIncomes
     .where((i) => !i.date.isBefore(start) && !i.date.isAfter(end))
     .toList()..sort((a, b) => b.date.compareTo(a.date));
 
-  double get todayIncome => _sumInRange(_startOfToday, _today);
-  double get monthIncome => _sumInRange(_startOfMonth, _today);
-  double get yearIncome => _sumInRange(_startOfYear, _today);
-  double get lastMonthIncome => _sumInRange(_startOfLastMonth, _endOfLastMonth);
-  double get lastYearIncome => _sumInRange(_startOfLastYear, _endOfLastYear);
+  double get todayIncome => _sumByType(_startOfToday, _today, FinanceType.income);
+  double get todayExpense => _sumByType(_startOfToday, _today, FinanceType.expense);
+  double get monthIncome => _sumByType(_startOfMonth, _today, FinanceType.income);
+  double get monthExpense => _sumByType(_startOfMonth, _today, FinanceType.expense);
+  double get yearIncome => _sumByType(_startOfYear, _today, FinanceType.income);
+  double get yearExpense => _sumByType(_startOfYear, _today, FinanceType.expense);
+  double get lastMonthIncome => _sumByType(_startOfLastMonth, _endOfLastMonth, FinanceType.income);
+  double get lastMonthExpense => _sumByType(_startOfLastMonth, _endOfLastMonth, FinanceType.expense);
+  double get lastYearIncome => _sumByType(_startOfLastYear, _endOfLastYear, FinanceType.income);
 
   double _pctChange(double current, double previous) =>
     previous == 0 ? (current > 0 ? 100 : 0) : ((current - previous) / previous * 100);
@@ -84,9 +89,115 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       final m = DateTime(now.year, now.month - i, 1);
       final mEnd = DateTime(now.year, now.month - i + 1, 0, 23, 59, 59);
       final label = DateFormat('MMM', 'id_ID').format(m);
-      result.add(MapEntry(label, _sumInRange(m, mEnd)));
+      result.add(MapEntry(label, _sumByType(m, mEnd, FinanceType.income) - _sumByType(m, mEnd, FinanceType.expense)));
     }
     return result;
+  }
+
+  void _showAddTransaction() {
+    FinanceType txType = FinanceType.income;
+    final amountCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    IncomeCategory category = IncomeCategory.project;
+    DateTime selectedDate = DateTime.now();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
+        final isIncome = txType == FinanceType.income;
+        final accentColor = isIncome ? AppColors.success : AppColors.danger;
+        return Container(
+          padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+            const SizedBox(height: 16),
+            Text('Tambah Transaksi', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            const SizedBox(height: 16),
+            // Type toggle
+            Container(
+              decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+              child: Row(children: FinanceType.values.map((t) {
+                final sel = txType == t;
+                final c = t == FinanceType.income ? AppColors.success : AppColors.danger;
+                return Expanded(child: GestureDetector(
+                  onTap: () => setSheetState(() => txType = t),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    decoration: BoxDecoration(color: sel ? c.withValues(alpha: 0.12) : Colors.transparent, borderRadius: BorderRadius.circular(11)),
+                    child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                      Icon(t == FinanceType.income ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, size: 16, color: sel ? c : AppColors.textMuted),
+                      const SizedBox(width: 6),
+                      Text(t.label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: sel ? c : AppColors.textMuted)),
+                    ]),
+                  ),
+                ));
+              }).toList()),
+            ),
+            const SizedBox(height: 16),
+            TextField(controller: amountCtrl, keyboardType: TextInputType.number, enabled: !isSubmitting,
+              decoration: InputDecoration(hintText: 'Jumlah (Rp)', prefixIcon: Icon(Icons.payments_rounded, color: accentColor)),
+              style: GoogleFonts.inter(fontSize: 14)),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<IncomeCategory>(
+              value: category,
+              items: IncomeCategory.values.map((c) => DropdownMenuItem(value: c, child: Text(c.categoryLabel, style: GoogleFonts.inter(fontSize: 14)))).toList(),
+              onChanged: isSubmitting ? null : (v) => setSheetState(() => category = v!),
+              decoration: const InputDecoration(prefixIcon: Icon(Icons.category_rounded)),
+            ),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: () async {
+                final d = await showDatePicker(context: ctx, initialDate: selectedDate, firstDate: DateTime(2024), lastDate: DateTime.now());
+                if (d != null) setSheetState(() => selectedDate = d);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMuted),
+                  const SizedBox(width: 12),
+                  Text(DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDate), style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
+                  const Spacer(), const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted),
+                ]),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(controller: descCtrl, maxLines: 2, enabled: !isSubmitting,
+              decoration: const InputDecoration(hintText: 'Deskripsi', prefixIcon: Icon(Icons.description_rounded)),
+              style: GoogleFonts.inter(fontSize: 14)),
+            const SizedBox(height: 20),
+            SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
+              onPressed: isSubmitting ? null : () async {
+                final amount = double.tryParse(amountCtrl.text) ?? 0;
+                if (amount <= 0 || descCtrl.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('Jumlah dan deskripsi wajib diisi'), behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+                  return;
+                }
+                setSheetState(() => isSubmitting = true);
+                final tx = Income(id: '', description: descCtrl.text.trim(), amount: amount, date: selectedDate, category: category, type: txType);
+                final ok = await FinanceService().createFinance(tx);
+                if (ok) {
+                  _fetchIncomes();
+                  if (mounted) Navigator.pop(ctx);
+                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                    content: Text('✅ ${txType.label} berhasil ditambahkan'), backgroundColor: accentColor,
+                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
+                } else {
+                  setSheetState(() => isSubmitting = false);
+                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('Gagal menyimpan'), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+                }
+              },
+              icon: isSubmitting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_rounded, size: 18),
+              label: Text(isSubmitting ? 'Menyimpan...' : 'Simpan Transaksi', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              style: ElevatedButton.styleFrom(backgroundColor: accentColor, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
+            )),
+          ])),
+        );
+      }),
+    );
   }
 
   @override
@@ -112,6 +223,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           tabs: const [Tab(text: 'Ringkasan'), Tab(text: 'Transaksi'), Tab(text: 'Perbandingan')],
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTransaction,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add_rounded, color: Colors.white),
+      ),
       body: TabBarView(controller: _tabCtrl, children: [
         _buildSummary(monthPct, yearPct),
         _buildTransactions(),
@@ -126,11 +242,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     final maxCat = categories.values.fold(0.0, (a, b) => a > b ? a : b);
 
     return ListView(padding: const EdgeInsets.all(16), children: [
-      // Income summary cards
+      // Saldo hero card
       Container(
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(colors: [Color(0xFFE53935), Color(0xFFFF7043)]),
+          gradient: const LinearGradient(colors: [Color(0xFF1A56DB), Color(0xFF3B82F6)]),
           borderRadius: BorderRadius.circular(20),
         ),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -139,26 +255,54 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 24)),
             const Spacer(),
             Container(padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(50)),
-              child: Text('Bidang Usaha', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white))),
+              child: Text('Hari Ini', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.white))),
           ]),
           const SizedBox(height: 16),
-          Text('Pemasukan Hari Ini', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+          Text('Saldo Hari Ini', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
           const SizedBox(height: 4),
-          Text(fmt.format(todayIncome), style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+          Text(fmt.format(todayIncome - todayExpense), style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+          const SizedBox(height: 12),
+          Row(children: [
+            Expanded(child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                const Icon(Icons.arrow_downward_rounded, size: 14, color: Colors.greenAccent),
+                const SizedBox(width: 6),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Masuk', style: GoogleFonts.inter(fontSize: 10, color: Colors.white60)),
+                  Text(fmt.format(todayIncome), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.greenAccent)),
+                ]),
+              ]),
+            )),
+            const SizedBox(width: 8),
+            Expanded(child: Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(color: Colors.white12, borderRadius: BorderRadius.circular(10)),
+              child: Row(children: [
+                Icon(Icons.arrow_upward_rounded, size: 14, color: Colors.red[200]),
+                const SizedBox(width: 6),
+                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                  Text('Keluar', style: GoogleFonts.inter(fontSize: 10, color: Colors.white60)),
+                  Text(fmt.format(todayExpense), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.red[200])),
+                ]),
+              ]),
+            )),
+          ]),
         ]),
       ),
       const SizedBox(height: 12),
 
       // Month & Year row
       Row(children: [
-        Expanded(child: _miniCard('Bulan Ini', monthIncome, monthPct, Icons.calendar_month_rounded)),
+        Expanded(child: _miniCard('Pemasukan Bulan', monthIncome, monthPct, Icons.arrow_downward_rounded, color: AppColors.success)),
         const SizedBox(width: 12),
-        Expanded(child: _miniCard('Tahun Ini', yearIncome, yearPct, Icons.date_range_rounded)),
+        Expanded(child: _miniCard('Pengeluaran Bulan', monthExpense, _pctChange(monthExpense, lastMonthExpense), Icons.arrow_upward_rounded, color: AppColors.danger)),
       ]),
       const SizedBox(height: 20),
 
       // Monthly bar chart
-      Text('Pemasukan 6 Bulan Terakhir', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Saldo 6 Bulan Terakhir', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
       const SizedBox(height: 12),
       Container(
         padding: const EdgeInsets.all(16),
@@ -196,52 +340,88 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   // ==================== TAB 2: TRANSAKSI ====================
   Widget _buildTransactions() {
-    final allItems = List<Income>.from(_allIncomes)..sort((a, b) => b.date.compareTo(a.date));
-    if (allItems.isEmpty) {
-      return Center(child: Text('Belum ada transaksi', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)));
-    }
+    // Filter items
+    var filtered = List<Income>.from(_allIncomes);
+    if (_txFilter == 'income') filtered = filtered.where((i) => i.isIncome).toList();
+    if (_txFilter == 'expense') filtered = filtered.where((i) => i.isExpense).toList();
+    filtered.sort((a, b) => b.date.compareTo(a.date));
 
     // Group by date
     final grouped = <String, List<Income>>{};
-    for (final item in allItems) {
+    for (final item in filtered) {
       final key = DateFormat('dd MMMM yyyy', 'id_ID').format(item.date);
       grouped.putIfAbsent(key, () => []).add(item);
     }
 
-    return ListView(padding: const EdgeInsets.all(16), children: [
-      ...grouped.entries.map((entry) {
-        final dateTotal = entry.value.fold(0.0, (s, i) => s + i.amount);
-        return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Row(children: [
-              Text(entry.key, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
-              const Spacer(),
-              Text(fmt.format(dateTotal), style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.success)),
-            ]),
-          ),
-          ...entry.value.map((item) => Container(
-            margin: const EdgeInsets.only(bottom: 8),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-            child: Row(children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(color: _catColor(item.category).withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
-                child: Icon(_catIcon(item.category), size: 18, color: _catColor(item.category)),
-              ),
-              const SizedBox(width: 12),
-              Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text(item.description, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                Text(item.categoryLabel, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
-              ])),
-              Text(fmt.format(item.amount), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success)),
-            ]),
-          )),
-        ]);
-      }),
-      const SizedBox(height: 20),
-    ]);
+    return StatefulBuilder(builder: (ctx, setSt) {
+      return ListView(padding: const EdgeInsets.all(16), children: [
+        // Filter chips
+        Row(children: [
+          _filterChip('Semua', 'all', setSt),
+          const SizedBox(width: 8),
+          _filterChip('Pemasukan', 'income', setSt),
+          const SizedBox(width: 8),
+          _filterChip('Pengeluaran', 'expense', setSt),
+        ]),
+        const SizedBox(height: 12),
+        if (filtered.isEmpty)
+          Padding(padding: const EdgeInsets.only(top: 40), child: Center(child: Text('Belum ada transaksi', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)))),
+        ...grouped.entries.map((entry) {
+          final dayIncome = entry.value.where((i) => i.isIncome).fold(0.0, (s, i) => s + i.amount);
+          final dayExpense = entry.value.where((i) => i.isExpense).fold(0.0, (s, i) => s + i.amount);
+          final dayNet = dayIncome - dayExpense;
+          final netColor = dayNet >= 0 ? AppColors.success : AppColors.danger;
+          return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Row(children: [
+                Text(entry.key, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                const Spacer(),
+                Text('${dayNet >= 0 ? '+' : ''}${fmt.format(dayNet)}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: netColor)),
+              ]),
+            ),
+            ...entry.value.map((item) {
+              final txColor = item.isIncome ? AppColors.success : AppColors.danger;
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(color: txColor.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
+                    child: Icon(item.isIncome ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, size: 18, color: txColor),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                    Text(item.description, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text('${item.categoryLabel} • ${item.type.label}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                  ])),
+                  Text('${item.isExpense ? '-' : '+'}${fmt.format(item.amount)}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: txColor)),
+                ]),
+              );
+            }),
+          ]);
+        }),
+        const SizedBox(height: 80),
+      ]);
+    });
+  }
+
+  Widget _filterChip(String label, String value, void Function(void Function()) setSt) {
+    final sel = _txFilter == value;
+    return GestureDetector(
+      onTap: () { setState(() => _txFilter = value); setSt(() {}); },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: sel ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surfaceAlt,
+          borderRadius: BorderRadius.circular(50),
+          border: Border.all(color: sel ? AppColors.primary : AppColors.border),
+        ),
+        child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? AppColors.primary : AppColors.textMuted)),
+      ),
+    );
   }
 
   // ==================== TAB 3: PERBANDINGAN ====================
@@ -310,20 +490,21 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   // ==================== SHARED WIDGETS ====================
 
-  Widget _miniCard(String label, double value, double pct, IconData icon) {
+  Widget _miniCard(String label, double value, double pct, IconData icon, {Color? color}) {
+    final c = color ?? AppColors.primary;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          Icon(icon, size: 18, color: AppColors.textMuted),
+          Icon(icon, size: 18, color: c),
           const Spacer(),
           _pctBadge(pct),
         ]),
         const SizedBox(height: 10),
         Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
         const SizedBox(height: 4),
-        Text(fmt.format(value), style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
+        Text(fmt.format(value), style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: c)),
       ]),
     );
   }

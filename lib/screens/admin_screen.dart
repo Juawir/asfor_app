@@ -36,6 +36,7 @@ class _AdminScreenState extends State<AdminScreen> {
     final emailCtrl = TextEditingController();
     final passwordCtrl = TextEditingController();
     String? division;
+    bool isSubmitting = false;
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
@@ -50,34 +51,45 @@ class _AdminScreenState extends State<AdminScreen> {
             const SizedBox(height: 4),
             Text('User baru akan memiliki akses ke divisi yang ditentukan', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
             const SizedBox(height: 20),
-            TextField(controller: nameCtrl, decoration: const InputDecoration(hintText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_rounded)), style: GoogleFonts.inter(fontSize: 14)),
+            TextField(controller: nameCtrl, enabled: !isSubmitting, decoration: const InputDecoration(hintText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
-            TextField(controller: emailCtrl, decoration: const InputDecoration(hintText: 'Email', prefixIcon: Icon(Icons.email_rounded)), style: GoogleFonts.inter(fontSize: 14)),
+            TextField(controller: emailCtrl, enabled: !isSubmitting, decoration: const InputDecoration(hintText: 'Email', prefixIcon: Icon(Icons.email_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
-            TextField(controller: passwordCtrl, obscureText: true, decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_rounded)), style: GoogleFonts.inter(fontSize: 14)),
+            TextField(controller: passwordCtrl, enabled: !isSubmitting, obscureText: true, decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              initialValue: division,
+              value: division,
               items: AppTheme.divisions.map((d) => DropdownMenuItem(value: d, child: Row(children: [
                 Icon(AppColors.getDivisionIcon(d), size: 18, color: AppColors.getDivisionColor(d)),
                 const SizedBox(width: 10), Text(d, style: GoogleFonts.inter(fontSize: 14)),
               ]))).toList(),
-              onChanged: (v) => setSheetState(() => division = v),
+              onChanged: isSubmitting ? null : (v) => setSheetState(() => division = v),
               decoration: const InputDecoration(hintText: 'Pilih Divisi', prefixIcon: Icon(Icons.group_rounded)),
               style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
             ),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
-              onPressed: () async {
+              onPressed: isSubmitting ? null : () async {
                 if (nameCtrl.text.isEmpty || emailCtrl.text.isEmpty || passwordCtrl.text.isEmpty || division == null) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Semua field wajib diisi')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: const Text('Semua field wajib diisi'),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
                   return;
                 }
                 final existing = _users.any((u) => u.email == emailCtrl.text.trim());
                 if (existing) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Email sudah digunakan')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: const Text('Email sudah digunakan'),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
                   return;
                 }
+                
+                // Show loading state
+                setSheetState(() => isSubmitting = true);
                 
                 final newUser = AppUser(
                   id: '', name: nameCtrl.text.trim(), email: emailCtrl.text.trim(),
@@ -93,11 +105,17 @@ class _AdminScreenState extends State<AdminScreen> {
                     behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                   ));
                 } else {
-                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Gagal menambahkan user')));
+                  setSheetState(() => isSubmitting = false);
+                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: const Text('Gagal menambahkan user'), backgroundColor: AppColors.danger,
+                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
                 }
               },
-              icon: const Icon(Icons.person_add_rounded, size: 18),
-              label: Text('Tambah User', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+              icon: isSubmitting
+                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.person_add_rounded, size: 18),
+              label: Text(isSubmitting ? 'Menyimpan...' : 'Tambah User', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             )),
           ])),
         );

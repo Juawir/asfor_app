@@ -66,31 +66,39 @@ class _TaskScreenState extends State<TaskScreen> with SingleTickerProviderStateM
     }
   }
 
-  void _showAddTask() {
+  void _showAddTask() async {
     String? div = _auth.isSuperAdmin ? (_selectedDivision == 'Semua' ? null : _selectedDivision) : _auth.currentUser?.division;
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     TaskPriority priority = TaskPriority.medium;
     DateTime dueDate = DateTime.now().add(const Duration(days: 7));
+    List<AppUser> allUsersCache = [];
     List<AppUser> divisionUsers = [];
-    String? selectedAssignee;
+    String? selectedAssigneeId;
+    String? selectedAssigneeName;
     bool loadingUsers = false;
 
-    Future<void> loadUsers(String division, void Function(void Function()) setSheetState) async {
-      setSheetState(() { loadingUsers = true; selectedAssignee = null; divisionUsers = []; });
-      final allUsers = await UserService().getUsers();
-      final filtered = allUsers.where((u) => u.division == division).toList();
+    // Pre-load all users before opening the sheet
+    allUsersCache = await UserService().getUsers();
+    if (div != null) {
+      divisionUsers = allUsersCache.where((u) => u.division == div).toList();
+    }
+    if (!mounted) return;
+
+    Future<void> reloadUsersForDivision(String division, void Function(void Function()) setSheetState) async {
+      setSheetState(() { loadingUsers = true; selectedAssigneeId = null; selectedAssigneeName = null; divisionUsers = []; });
+      // Use cached users, no extra API call needed
+      final filtered = allUsersCache.where((u) => u.division == division).toList();
+      // Small delay to show loading indicator for visual feedback
+      await Future.delayed(const Duration(milliseconds: 200));
       setSheetState(() { divisionUsers = filtered; loadingUsers = false; });
     }
 
     showModalBottomSheet(
       context: context, isScrollControlled: true, backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
-        // Pre-load users if division is already set
-        if (div != null && divisionUsers.isEmpty && !loadingUsers) {
-          loadUsers(div!, setSheetState);
-        }
         return Container(
+          constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.85),
           padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
           decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -112,7 +120,7 @@ class _TaskScreenState extends State<TaskScreen> with SingleTickerProviderStateM
               ]))).toList(),
               onChanged: (v) {
                 setSheetState(() => div = v);
-                if (v != null) loadUsers(v, setSheetState);
+                if (v != null) reloadUsersForDivision(v, setSheetState);
               },
               decoration: const InputDecoration(hintText: 'Pilih divisi', prefixIcon: Icon(Icons.group_rounded)),
               style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
@@ -129,25 +137,73 @@ class _TaskScreenState extends State<TaskScreen> with SingleTickerProviderStateM
                   Text('Memuat anggota divisi...', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
                 ]),
               )
+            else if (div == null)
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.textMuted),
+                  const SizedBox(width: 12),
+                  Text('Pilih divisi terlebih dahulu', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
+                ]),
+              )
+            else if (divisionUsers.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  const Icon(Icons.person_off_rounded, size: 16, color: AppColors.textMuted),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Tidak ada anggota di divisi ini', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted))),
+                ]),
+              )
             else
               DropdownButtonFormField<String>(
-                value: selectedAssignee,
-                items: [
-                  const DropdownMenuItem<String>(value: null, child: Text('Pilih anggota')),
-                  ...divisionUsers.map((u) => DropdownMenuItem(value: u.name, child: Row(children: [
-                    Container(
-                      width: 24, height: 24,
-                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
-                      child: Center(child: Text(u.name[0].toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary))),
-                    ),
-                    const SizedBox(width: 10),
-                    Flexible(child: Text(u.name, style: GoogleFonts.inter(fontSize: 14), overflow: TextOverflow.ellipsis)),
-                  ]))),
-                ],
-                onChanged: (v) => setSheetState(() => selectedAssignee = v),
-                decoration: const InputDecoration(hintText: 'Ditugaskan kepada', prefixIcon: Icon(Icons.person_rounded)),
+                value: selectedAssigneeId,
+                hint: Text('Pilih anggota', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)),
+                isExpanded: true,
+                items: divisionUsers.map((u) => DropdownMenuItem<String>(value: u.id, child: Row(children: [
+                  Container(
+                    width: 24, height: 24,
+                    decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), shape: BoxShape.circle),
+                    child: Center(child: Text(u.name[0].toUpperCase(), style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.primary))),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(u.name, style: GoogleFonts.inter(fontSize: 14), overflow: TextOverflow.ellipsis),
+                ]))).toList(),
+                onChanged: (v) => setSheetState(() {
+                  selectedAssigneeId = v;
+                  selectedAssigneeName = divisionUsers.firstWhere((u) => u.id == v).name;
+                }),
+                decoration: const InputDecoration(prefixIcon: Icon(Icons.person_rounded)),
                 style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
               ),
+            const SizedBox(height: 12),
+            // Due date picker
+            Text('Deadline', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            GestureDetector(
+              onTap: () async {
+                final picked = await showDatePicker(
+                  context: ctx,
+                  initialDate: dueDate,
+                  firstDate: DateTime.now(),
+                  lastDate: DateTime.now().add(const Duration(days: 365)),
+                );
+                if (picked != null) setSheetState(() => dueDate = picked);
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                child: Row(children: [
+                  const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMuted),
+                  const SizedBox(width: 12),
+                  Text(DateFormat('dd MMMM yyyy', 'id_ID').format(dueDate), style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
+                  const Spacer(),
+                  const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted),
+                ]),
+              ),
+            ),
             const SizedBox(height: 12),
             Text('Prioritas', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
             const SizedBox(height: 8),
@@ -169,11 +225,19 @@ class _TaskScreenState extends State<TaskScreen> with SingleTickerProviderStateM
             SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
               onPressed: () async {
                 if (titleCtrl.text.isEmpty || div == null) {
-                  ScaffoldMessenger.of(ctx).showSnackBar(const SnackBar(content: Text('Judul dan divisi wajib diisi')));
+                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                    content: const Text('Judul dan divisi wajib diisi'),
+                    behavior: SnackBarBehavior.floating,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ));
                   return;
                 }
-                final newTask = Task(id: '', title: titleCtrl.text, description: descCtrl.text, division: div!, assignee: selectedAssignee ?? 'Belum ditugaskan', dueDate: dueDate, priority: priority, status: TaskStatus.todo);
-                final success = await TaskService().createTask(newTask);
+                final newTask = Task(
+                  id: '', title: titleCtrl.text, description: descCtrl.text,
+                  division: div!, assignee: selectedAssigneeName ?? '',
+                  dueDate: dueDate, priority: priority, status: TaskStatus.todo,
+                );
+                final success = await TaskService().createTask(newTask, assigneeId: selectedAssigneeId ?? '');
                 if (success) {
                   _fetchTasks();
                 }
