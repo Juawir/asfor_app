@@ -14,13 +14,13 @@ class AuthService {
   bool get isLoggedIn => _currentUser != null;
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
 
-  Future<String?> login(String email, String password) async {
+    Future<String?> login(String login, String password) async {
     try {
       final response = await http.post(
         Uri.parse('${ApiConfig.baseUrl}/login'),
         headers: await ApiConfig.getHeaders(),
         body: jsonEncode({
-          'email': email,
+          'login': login,
           'password': password,
         }),
       );
