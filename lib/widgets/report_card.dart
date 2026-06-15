@@ -36,12 +36,12 @@ class ReportCard extends StatelessWidget {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.borderLight),
+        border: Border.all(color: AppColors.borderLightOf(context)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.02),
+            color: AppColors.cardShadowOf(context),
             blurRadius: 10, offset: const Offset(0, 4),
           )
         ],
@@ -53,8 +53,15 @@ class ReportCard extends StatelessWidget {
         child: InkWell(
           onTap: onTap,
           child: Column(children: [
-            // Top accent bar
-            Container(height: 4, width: double.infinity, color: divColor),
+            // Top accent bar with gradient
+            Container(
+              height: 4, width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [divColor, divColor.withValues(alpha: 0.5)],
+                ),
+              ),
+            ),
             
             Padding(
               padding: const EdgeInsets.all(16),
@@ -65,14 +72,13 @@ class ReportCard extends StatelessWidget {
                       report.title,
                       style: GoogleFonts.inter(
                         fontSize: 15, fontWeight: FontWeight.w700,
-                        color: AppColors.textPrimary,
+                        color: AppColors.textPrimaryOf(context),
                         letterSpacing: -0.3,
                       ),
                       maxLines: 2, overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 12),
-                  // Status Badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
@@ -85,9 +91,7 @@ class ReportCard extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         report.statusLabel,
-                        style: GoogleFonts.inter(
-                          fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor,
-                        ),
+                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: _statusColor),
                       ),
                     ]),
                   ),
@@ -95,12 +99,11 @@ class ReportCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   report.description,
-                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
+                  style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context), height: 1.5),
                   maxLines: 2, overflow: TextOverflow.ellipsis,
                 ),
                 const SizedBox(height: 16),
                 
-                // Footer
                 Row(children: [
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -111,42 +114,32 @@ class ReportCard extends StatelessWidget {
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Icon(AppColors.getDivisionIcon(report.division), size: 12, color: divColor),
                       const SizedBox(width: 4),
-                      Text(
-                        report.division,
-                        style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: divColor),
-                      ),
+                      Text(report.division, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: divColor)),
                     ]),
                   ),
                   const Spacer(),
-                  Icon(Icons.calendar_month_rounded, size: 14, color: AppColors.textMuted),
+                  Icon(Icons.calendar_month_rounded, size: 14, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 4),
                   Text(
                     DateFormat('dd MMM yyyy', 'id_ID').format(report.date),
-                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+                    style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondaryOf(context)),
                   ),
                 ]),
                 
-                // Budget (if any)
                 if (report.budget > 0) ...[
                   const SizedBox(height: 12),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                     decoration: BoxDecoration(
-                      color: AppColors.surfaceAlt,
+                      color: AppColors.surfaceAltOf(context),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.borderLight),
+                      border: Border.all(color: AppColors.borderLightOf(context)),
                     ),
                     child: Row(children: [
                       Icon(Icons.payments_rounded, size: 16, color: AppColors.primary),
                       const SizedBox(width: 8),
-                      Text(
-                        'Anggaran: ',
-                        style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondary),
-                      ),
-                      Text(
-                        fmt.format(report.budget),
-                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
-                      ),
+                      Text('Anggaran: ', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textSecondaryOf(context))),
+                      Text(fmt.format(report.budget), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                     ]),
                   ),
                 ],

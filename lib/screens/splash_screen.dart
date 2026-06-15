@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../theme/app_theme.dart';
+
 import '../services/auth_service.dart';
+import '../services/local_notification_service.dart';
 import 'login_screen.dart';
 import 'main_screen.dart';
 
@@ -42,12 +43,18 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
   void _navigate() async {
     final isLoggedIn = await AuthService().checkAuth();
     if (!mounted) return;
+
+    // Start notification polling if logged in
+    if (isLoggedIn) {
+      LocalNotificationService().startPolling();
+    }
+
     Navigator.pushReplacement(
       context,
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => isLoggedIn ? const MainScreen() : const LoginScreen(),
+        pageBuilder: (context, animation, secondaryAnimation) => isLoggedIn ? const MainScreen() : const LoginScreen(),
         transitionDuration: const Duration(milliseconds: 400),
-        transitionsBuilder: (_, anim, __, child) =>
+        transitionsBuilder: (context, anim, secondaryAnim, child) =>
             FadeTransition(opacity: anim, child: child),
       ),
     );
@@ -109,7 +116,14 @@ class _SplashScreenState extends State<SplashScreen> with TickerProviderStateMix
                             blurRadius: 30, offset: const Offset(0, 12)),
                         ],
                       ),
-                      child: const Icon(Icons.apartment_rounded, color: Colors.white, size: 48),
+                      child: Center(
+                        child: Image.asset(
+                          'assets/images/logo.png',
+                          width: 54,
+                          height: 54,
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
                 ),

@@ -4,7 +4,7 @@ import '../theme/app_theme.dart';
 import '../models/event.dart';
 import '../services/event_service.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -54,7 +54,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
   void _showEventForm([AppEvent? existing]) {
     final user = AuthService().currentUser;
-    final isAdmin = user?.role == 'admin';
+    final isAdmin = user?.isSuperAdmin == true;
 
     final titleCtrl = TextEditingController(text: existing?.title ?? '');
     final descCtrl = TextEditingController(text: existing?.description ?? '');
@@ -80,18 +80,18 @@ class _EventsScreenState extends State<EventsScreen> {
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheet) {
         return Container(
           padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 24),
-          decoration: const BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          decoration: BoxDecoration(
+            color: AppColors.surfaceOf(context),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
           ),
           child: SingleChildScrollView(child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4)))),
               const SizedBox(height: 16),
               Text(existing == null ? 'Tambah Kegiatan' : 'Edit Kegiatan',
-                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                style: GoogleFonts.inter(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
               const SizedBox(height: 20),
 
               // Title
@@ -115,14 +115,14 @@ class _EventsScreenState extends State<EventsScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                  decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
                   child: Row(children: [
                     const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.primary),
                     const SizedBox(width: 12),
                     Text('${pickedDate.day}/${pickedDate.month}/${pickedDate.year}',
-                      style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
+                      style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context))),
                     const Spacer(),
-                    const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted),
+                    Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMutedOf(context)),
                   ]),
                 ),
               ),
@@ -137,16 +137,16 @@ class _EventsScreenState extends State<EventsScreen> {
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                  decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                  decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
                   child: Row(children: [
                     const Icon(Icons.access_time_rounded, size: 18, color: AppColors.primary),
                     const SizedBox(width: 12),
                     Text(pickedTime != null ? pickedTime!.format(ctx) : 'Pilih waktu (opsional)',
-                      style: GoogleFonts.inter(fontSize: 14, color: pickedTime != null ? AppColors.textPrimary : AppColors.textMuted)),
+                      style: GoogleFonts.inter(fontSize: 14, color: pickedTime != null ? AppColors.textPrimaryOf(context) : AppColors.textMutedOf(context))),
                     const Spacer(),
                     if (pickedTime != null)
                       GestureDetector(onTap: () => setSheet(() => pickedTime = null),
-                        child: const Icon(Icons.close_rounded, size: 16, color: AppColors.textMuted)),
+                        child: Icon(Icons.close_rounded, size: 16, color: AppColors.textMutedOf(context))),
                   ]),
                 ),
               ),
@@ -155,7 +155,7 @@ class _EventsScreenState extends State<EventsScreen> {
               // Division
               _sheetLabel('Divisi'),
               DropdownButtonFormField<String>(
-                value: division,
+                initialValue: division,
                 items: divisions.map((d) => DropdownMenuItem(value: d, child: Text(d, style: GoogleFonts.inter(fontSize: 14)))).toList(),
                 onChanged: saving ? null : (v) => setSheet(() => division = v!),
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.group_rounded)),
@@ -206,8 +206,10 @@ class _EventsScreenState extends State<EventsScreen> {
                     ok = await _service.updateEvent(existing.id, newEvent);
                   }
 
-                  if (mounted) {
+                  if (ctx.mounted) {
                     Navigator.pop(ctx);
+                  }
+                  if (mounted) {
                     if (ok) {
                       _fetchEvents();
                       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
@@ -257,7 +259,7 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
-    final isAdmin = user?.role == 'admin';
+    final isAdmin = user?.isSuperAdmin == true;
     final monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
     final dayNames = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
 
@@ -274,11 +276,11 @@ class _EventsScreenState extends State<EventsScreen> {
       ..sort((a, b) => b.eventDate.compareTo(a.eventDate));
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text('Dashboard Kegiatan', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface, surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceOf(context), surfaceTintColor: Colors.transparent,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showEventForm,
@@ -295,7 +297,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 children: [
                   // --- Calendar Header ---
                   Container(
-                    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.border)),
+                    decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(20), border: Border.all(color: AppColors.borderOf(context))),
                     child: Column(children: [
                       // Month Nav
                       Padding(
@@ -304,7 +306,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           IconButton(onPressed: _prevMonth, icon: const Icon(Icons.chevron_left_rounded, color: AppColors.primary)),
                           Expanded(child: Center(child: Text(
                             '${monthNames[_focusedMonth.month - 1]} ${_focusedMonth.year}',
-                            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                            style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)),
                           ))),
                           IconButton(onPressed: _nextMonth, icon: const Icon(Icons.chevron_right_rounded, color: AppColors.primary)),
                         ]),
@@ -315,7 +317,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceAround,
                           children: dayNames.map((d) => SizedBox(width: 40,
-                            child: Center(child: Text(d, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMuted)))
+                            child: Center(child: Text(d, style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textMutedOf(context))))
                           )).toList(),
                         ),
                       ),
@@ -351,7 +353,7 @@ class _EventsScreenState extends State<EventsScreen> {
                                   children: [
                                     Text('$day', style: GoogleFonts.inter(
                                       fontSize: 13, fontWeight: isToday || hasEvents ? FontWeight.w700 : FontWeight.w400,
-                                      color: isToday ? Colors.white : (hasEvents ? AppColors.primary : AppColors.textPrimary),
+                                      color: isToday ? Colors.white : (hasEvents ? AppColors.primary : AppColors.textPrimaryOf(context)),
                                     )),
                                     if (hasEvents) Container(width: 5, height: 5, margin: const EdgeInsets.only(top: 2),
                                       decoration: BoxDecoration(color: isToday ? Colors.white70 : AppColors.primary, shape: BoxShape.circle)),
@@ -368,7 +370,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
                   // --- Upcoming Events ---
                   if (upcomingEvents.isNotEmpty) ...[
-                    Text('Kegiatan Mendatang', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                    Text('Kegiatan Mendatang', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                     const SizedBox(height: 10),
                     ...upcomingEvents.map((e) => _eventCard(e, isAdmin, user?.id.toString() ?? '')),
                     const SizedBox(height: 16),
@@ -376,7 +378,7 @@ class _EventsScreenState extends State<EventsScreen> {
 
                   // --- Past Events ---
                   if (pastEvents.isNotEmpty) ...[
-                    Text('Kegiatan Selesai', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textMuted)),
+                    Text('Kegiatan Selesai', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textMutedOf(context))),
                     const SizedBox(height: 10),
                     ...pastEvents.map((e) => _eventCard(e, isAdmin, user?.id.toString() ?? '', isPast: true)),
                   ],
@@ -385,11 +387,11 @@ class _EventsScreenState extends State<EventsScreen> {
                     Center(child: Padding(
                       padding: const EdgeInsets.only(top: 40),
                       child: Column(children: [
-                        Icon(Icons.event_busy_rounded, size: 60, color: AppColors.textMuted.withValues(alpha: 0.4)),
+                        Icon(Icons.event_busy_rounded, size: 60, color: AppColors.textMutedOf(context).withValues(alpha: 0.4)),
                         const SizedBox(height: 12),
-                        Text('Tidak ada kegiatan bulan ini', style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 14)),
+                        Text('Tidak ada kegiatan bulan ini', style: GoogleFonts.inter(color: AppColors.textMutedOf(context), fontSize: 14)),
                         const SizedBox(height: 6),
-                        Text('Tap tombol + untuk menambahkan kegiatan', style: GoogleFonts.inter(color: AppColors.textMuted, fontSize: 12)),
+                        Text('Tap tombol + untuk menambahkan kegiatan', style: GoogleFonts.inter(color: AppColors.textMutedOf(context), fontSize: 12)),
                       ]),
                     )),
 
@@ -406,15 +408,15 @@ class _EventsScreenState extends State<EventsScreen> {
       backgroundColor: Colors.transparent,
       builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
-        decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+        decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4)))),
             const SizedBox(height: 16),
             Text('Kegiatan ${date.day}/${date.month}/${date.year}',
-              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
             const SizedBox(height: 12),
             ...events.map((e) => _eventCard(e, isAdmin, userId, inSheet: true)),
           ],
@@ -431,9 +433,9 @@ class _EventsScreenState extends State<EventsScreen> {
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: AppColors.surface,
+        color: AppColors.surfaceOf(context),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.borderOf(context)),
         boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.03), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Row(
@@ -443,17 +445,17 @@ class _EventsScreenState extends State<EventsScreen> {
           Container(
             width: 44, padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-              color: isPast ? AppColors.surfaceAlt : AppColors.primary.withValues(alpha: 0.1),
+              color: isPast ? AppColors.surfaceAltOf(context) : AppColors.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
               Text('${event.eventDate.day}', style: GoogleFonts.inter(
                 fontSize: 18, fontWeight: FontWeight.w800,
-                color: isPast ? AppColors.textMuted : AppColors.primary,
+                color: isPast ? AppColors.textMutedOf(context) : AppColors.primary,
               )),
               Text(_shortMonth(event.eventDate.month), style: GoogleFonts.inter(
                 fontSize: 10, fontWeight: FontWeight.w600,
-                color: isPast ? AppColors.textMuted : AppColors.primary,
+                color: isPast ? AppColors.textMutedOf(context) : AppColors.primary,
               )),
             ]),
           ),
@@ -476,32 +478,32 @@ class _EventsScreenState extends State<EventsScreen> {
                 ],
               ]),
               const SizedBox(height: 6),
-              Text(event.title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: isPast ? AppColors.textMuted : AppColors.textPrimary)),
+              Text(event.title, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: isPast ? AppColors.textMutedOf(context) : AppColors.textPrimaryOf(context))),
               if (event.eventTime != null) ...[
                 const SizedBox(height: 4),
                 Row(children: [
-                  const Icon(Icons.access_time_rounded, size: 13, color: AppColors.textMuted),
+                  Icon(Icons.access_time_rounded, size: 13, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 4),
-                  Text(event.eventTime!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+                  Text(event.eventTime!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
                 ]),
               ],
               if (event.location != null && event.location!.isNotEmpty) ...[
                 const SizedBox(height: 2),
                 Row(children: [
-                  const Icon(Icons.location_on_rounded, size: 13, color: AppColors.textMuted),
+                  Icon(Icons.location_on_rounded, size: 13, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 4),
-                  Expanded(child: Text(event.location!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted), overflow: TextOverflow.ellipsis)),
+                  Expanded(child: Text(event.location!, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context)), overflow: TextOverflow.ellipsis)),
                 ]),
               ],
               if (event.creatorName != null) ...[
                 const SizedBox(height: 4),
-                Text('oleh ${event.creatorName}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic)),
+                Text('oleh ${event.creatorName}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context), fontStyle: FontStyle.italic)),
               ],
             ]),
           ),
           if (canEdit)
             PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textMuted),
+              icon: Icon(Icons.more_vert_rounded, size: 18, color: AppColors.textMutedOf(context)),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               onSelected: (val) {
                 if (!inSheet) {}
@@ -533,6 +535,6 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _sheetLabel(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 6),
-    child: Text(text, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+    child: Text(text, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context))),
   );
 }

@@ -24,7 +24,7 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
   void initState() {
     super.initState();
     final user = AuthService().currentUser;
-    _isITSupport = user?.role == 'admin' || user?.division == 'IT Support';
+    _isITSupport = user?.isSuperAdmin == true || user?.division == 'IT Support';
     _canEdit = _isITSupport || widget.lab.pics.any((pic) => pic.id == user?.id);
     _fetchDetails();
   }
@@ -55,19 +55,19 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
         return Container(
           padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4)))),
               const SizedBox(height: 16),
-              Text(isEdit ? 'Edit Barang' : 'Tambah Barang', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              Text(isEdit ? 'Edit Barang' : 'Tambah Barang', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
               const SizedBox(height: 16),
               TextField(controller: nameCtrl, enabled: !isSubmitting, decoration: const InputDecoration(hintText: 'Nama Barang', prefixIcon: Icon(Icons.inventory_2_rounded)), style: GoogleFonts.inter(fontSize: 14)),
               const SizedBox(height: 12),
               TextField(controller: qtyCtrl, enabled: !isSubmitting, keyboardType: TextInputType.number, decoration: const InputDecoration(hintText: 'Jumlah', prefixIcon: Icon(Icons.numbers_rounded)), style: GoogleFonts.inter(fontSize: 14)),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: condition,
+                initialValue: condition,
                 items: ['Baik', 'Rusak Ringan', 'Rusak Berat'].map((c) => DropdownMenuItem(value: c, child: Text(c, style: GoogleFonts.inter(fontSize: 14)))).toList(),
                 onChanged: isSubmitting ? null : (v) => setSheetState(() => condition = v!),
                 decoration: const InputDecoration(prefixIcon: Icon(Icons.health_and_safety_rounded)),
@@ -91,7 +91,9 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
                   if (mounted) {
                     if (success) {
                       _fetchDetails();
-                      Navigator.pop(ctx);
+                      if (ctx.mounted) {
+                        Navigator.pop(ctx);
+                      }
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Berhasil menyimpan barang'), backgroundColor: AppColors.success));
                     } else {
                       setSheetState(() => isSubmitting = false);
@@ -141,11 +143,11 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
         leading: IconButton(icon: const Icon(Icons.arrow_back_rounded), onPressed: () => Navigator.pop(context)),
         title: Text(_lab?.name ?? widget.lab.name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface, surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceOf(context), surfaceTintColor: Colors.transparent,
       ),
       floatingActionButton: _canEdit ? FloatingActionButton.extended(
         onPressed: _showItemDialog,
@@ -161,16 +163,16 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
               // PIC Info
               Container(
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.borderOf(context))),
                 child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Detail Lab', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                  Text('Detail Lab', style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                   const SizedBox(height: 8),
-                  Text(_lab?.description ?? widget.lab.description, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondary)),
+                  Text(_lab?.description ?? widget.lab.description, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textSecondaryOf(context))),
                   const SizedBox(height: 16),
                   Row(children: [
-                    const Icon(Icons.people_alt_rounded, size: 18, color: AppColors.textMuted),
+                    Icon(Icons.people_alt_rounded, size: 18, color: AppColors.textMutedOf(context)),
                     const SizedBox(width: 8),
-                    Expanded(child: Text('Penanggung Jawab:', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted))),
+                    Expanded(child: Text('Penanggung Jawab:', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMutedOf(context)))),
                   ]),
                   const SizedBox(height: 8),
                   if (_lab != null && _lab!.pics.isNotEmpty)
@@ -187,26 +189,26 @@ class _LabDetailScreenState extends State<LabDetailScreen> {
                 ]),
               ),
               const SizedBox(height: 20),
-              Text('Daftar Barang', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+              Text('Daftar Barang', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
               const SizedBox(height: 12),
               if (_items.isEmpty)
-                Center(child: Padding(padding: const EdgeInsets.only(top: 40), child: Text('Belum ada barang di lab ini', style: GoogleFonts.inter(color: AppColors.textMuted))))
+                Center(child: Padding(padding: const EdgeInsets.only(top: 40), child: Text('Belum ada barang di lab ini', style: GoogleFonts.inter(color: AppColors.textMutedOf(context)))))
               else
                 ..._items.map((item) => Container(
                   margin: const EdgeInsets.only(bottom: 12),
                   padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+                  decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderOf(context))),
                   child: Row(children: [
                     Container(
                       padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(10)),
-                      child: const Icon(Icons.devices_rounded, color: AppColors.textMuted),
+                      decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(10)),
+                      child: Icon(Icons.devices_rounded, color: AppColors.textMutedOf(context)),
                     ),
                     const SizedBox(width: 12),
                     Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                      Text(item.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
-                      Text('Jumlah: ${item.quantity}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
-                      if (item.notes.isNotEmpty) Text(item.notes, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted, fontStyle: FontStyle.italic)),
+                      Text(item.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context))),
+                      Text('Jumlah: ${item.quantity}', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
+                      if (item.notes.isNotEmpty) Text(item.notes, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context), fontStyle: FontStyle.italic)),
                     ])),
                     Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
                       Container(

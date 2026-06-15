@@ -22,7 +22,7 @@ class Candidate {
   };
 
   factory Candidate.fromJson(Map<String, dynamic> json) => Candidate(
-    userId: json['userId'] ?? '',
+    userId: json['userId']?.toString() ?? '',
     name: json['name'] ?? '',
     division: json['division'] ?? '',
     visiMisi: json['visiMisi'] ?? '',
@@ -37,6 +37,7 @@ class Election {
   final String title;
   final List<Candidate> candidates;
   final List<String> voterIds; // user IDs who already voted
+  final List<Map<String, dynamic>> history; // voting history
   ElectionStatus status;
   final DateTime createdAt;
 
@@ -45,6 +46,7 @@ class Election {
     required this.title,
     required this.candidates,
     this.voterIds = const [],
+    this.history = const [],
     this.status = ElectionStatus.active,
     DateTime? createdAt,
   }) : createdAt = createdAt ?? DateTime.now();
@@ -75,6 +77,7 @@ class Election {
     title: json['title'] ?? '',
     candidates: (json['candidates'] as List?)?.map((c) => Candidate.fromJson(c)).toList() ?? [],
     voterIds: List<String>.from(json['voterIds'] ?? []),
+    history: List<Map<String, dynamic>>.from(json['history'] ?? []),
     status: json['status'] == 'completed' ? ElectionStatus.completed : ElectionStatus.active,
     createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
   );

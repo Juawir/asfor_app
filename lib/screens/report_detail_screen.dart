@@ -5,7 +5,8 @@ import '../models/report.dart';
 import '../theme/app_theme.dart';
 import '../services/report_service.dart';
 import '../services/auth_service.dart';
-
+import 'package:url_launcher/url_launcher.dart';
+import '../services/api_config.dart';
 class ReportDetailScreen extends StatefulWidget {
   final Report report;
   const ReportDetailScreen({super.key, required this.report});
@@ -57,7 +58,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Masukkan alasan penolakan:', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary)),
+              Text('Masukkan alasan penolakan:', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context))),
               const SizedBox(height: 12),
               TextField(
                 controller: reasonCtrl,
@@ -66,7 +67,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   hintText: 'Contoh: Anggaran melebihi batas yang diizinkan...',
                   hintStyle: GoogleFonts.inter(fontSize: 13),
                   border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: AppColors.borderOf(context))),
                 ),
                 style: GoogleFonts.inter(fontSize: 14),
               ),
@@ -75,7 +76,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(ctx),
-              child: Text('Batal', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+              child: Text('Batal', style: GoogleFonts.inter(fontWeight: FontWeight.w600, color: AppColors.textMutedOf(context))),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: AppColors.danger, foregroundColor: Colors.white, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
@@ -86,14 +87,18 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 }
                 setDialog(() => confirming = true);
                 final updated = await _service.rejectReport(_report.id, reasonCtrl.text.trim());
-                if (mounted) Navigator.pop(ctx);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                }
                 if (updated != null) {
                   setState(() => _report = updated);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-                    content: Text('Laporan ditolak.'),
-                    backgroundColor: AppColors.danger,
-                    behavior: SnackBarBehavior.floating,
-                  ));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                      content: Text('Laporan ditolak.'),
+                      backgroundColor: AppColors.danger,
+                      behavior: SnackBarBehavior.floating,
+                    ));
+                  }
                 }
               },
               child: Text(confirming ? 'Memproses...' : 'Tolak Laporan', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
@@ -115,14 +120,14 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       case ReportStatus.approved: statusColor = AppColors.success;
       case ReportStatus.pending: statusColor = AppColors.warning;
       case ReportStatus.rejected: statusColor = AppColors.danger;
-      case ReportStatus.draft: statusColor = AppColors.textMuted;
+      case ReportStatus.draft: statusColor = AppColors.textMutedOf(context);
     }
 
     final canApprove = isAdmin && _report.status == ReportStatus.pending;
     final canReject = isAdmin && (_report.status == ReportStatus.pending || _report.status == ReportStatus.approved);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       // Admin action bar for pending reports
       bottomNavigationBar: canApprove || canReject
           ? SafeArea(
@@ -200,10 +205,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
           // Status & Budget card
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+            decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.borderOf(context))),
             child: Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Status', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+                Text('Status', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context), fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
@@ -211,10 +216,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                   child: Text(_report.statusLabel, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: statusColor)),
                 ),
               ])),
-              Container(width: 1, height: 40, color: AppColors.border),
+              Container(width: 1, height: 40, color: AppColors.borderOf(context)),
               const SizedBox(width: 16),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Anggaran', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
+                Text('Anggaran', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context), fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
                 Text(_report.budget > 0 ? fmt.format(_report.budget) : '-', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: AppColors.primary)),
               ])),
@@ -237,40 +242,56 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text('Alasan Penolakan', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.danger)),
                   const SizedBox(height: 4),
-                  Text(_report.rejectionNote!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary, height: 1.5)),
+                  Text(_report.rejectionNote!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context), height: 1.5)),
                 ])),
               ]),
             ),
           ],
           const SizedBox(height: 20),
           // Description
-          Text('Deskripsi', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+          Text('Deskripsi', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
           const SizedBox(height: 8),
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
-            child: Text(_report.description, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondary, height: 1.6)),
+            decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderOf(context))),
+            child: Text(_report.description, style: GoogleFonts.inter(fontSize: 14, color: AppColors.textSecondaryOf(context), height: 1.6)),
           ),
           // Attachments
           if (_report.attachments.isNotEmpty) ...[
             const SizedBox(height: 20),
-            Text('Lampiran', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            Text('Lampiran', style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
             const SizedBox(height: 8),
-            ..._report.attachments.map((a) => Container(
-              margin: const EdgeInsets.only(bottom: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
-              child: Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
-                  child: const Icon(Icons.attach_file_rounded, size: 18, color: AppColors.primary),
+            ..._report.attachments.map((a) {
+              final fileName = a.split('/').last;
+              return GestureDetector(
+                onTap: () async {
+                  final urlStr = a.startsWith('http') ? a : '${ApiConfig.baseUrl.replaceAll('/api', '/storage')}/$a';
+                  final uri = Uri.parse(urlStr);
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  } else {
+                    if (context.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Tidak dapat membuka lampiran'), backgroundColor: AppColors.danger));
+                    }
+                  }
+                },
+                child: Container(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
+                  child: Row(children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(color: AppColors.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
+                      child: const Icon(Icons.attach_file_rounded, size: 18, color: AppColors.primary),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Text(fileName, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimaryOf(context)))),
+                    Icon(Icons.download_rounded, size: 20, color: AppColors.textMutedOf(context)),
+                  ]),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: Text(a, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w500, color: AppColors.textPrimary))),
-                const Icon(Icons.download_rounded, size: 20, color: AppColors.textMuted),
-              ]),
-            )),
+              );
+            }),
           ],
           const SizedBox(height: 40),
         ]))),
@@ -282,10 +303,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(children: [
-        Icon(icon, size: 16, color: AppColors.textMuted),
+        Icon(icon, size: 16, color: AppColors.textMutedOf(context)),
         const SizedBox(width: 10),
-        Text('$label: ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMuted, fontWeight: FontWeight.w500)),
-        Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
+        Text('$label: ', style: GoogleFonts.inter(fontSize: 13, color: AppColors.textMutedOf(context), fontWeight: FontWeight.w500)),
+        Expanded(child: Text(value, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)))),
       ]),
     );
   }

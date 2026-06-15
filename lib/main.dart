@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'theme/app_theme.dart';
 import 'screens/splash_screen.dart';
+import 'services/local_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -19,6 +20,7 @@ void main() async {
 
   await dotenv.load(fileName: ".env");
   await initializeDateFormatting('id_ID', null);
+  await LocalNotificationService().init();
   runApp(const AsforApp());
 }
 
@@ -31,6 +33,8 @@ class AsforApp extends StatelessWidget {
       title: 'ASFOR',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       home: const SplashScreen(),
     );
   }

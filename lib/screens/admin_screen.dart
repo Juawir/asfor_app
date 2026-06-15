@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../models/user.dart';
 import '../services/user_service.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 
 class AdminScreen extends StatefulWidget {
   const AdminScreen({super.key});
@@ -43,13 +43,13 @@ class _AdminScreenState extends State<AdminScreen> {
       builder: (ctx) => StatefulBuilder(builder: (ctx, setSheetState) {
         return Container(
           padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: const BorderRadius.vertical(top: Radius.circular(24))),
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4)))),
             const SizedBox(height: 16),
-            Text('Tambah User Baru', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            Text('Tambah User Baru', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
             const SizedBox(height: 4),
-            Text('User baru akan memiliki akses ke divisi yang ditentukan', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+            Text('User baru akan memiliki akses ke divisi yang ditentukan', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
             const SizedBox(height: 20),
             TextField(controller: nameCtrl, enabled: !isSubmitting, decoration: const InputDecoration(hintText: 'Nama Lengkap', prefixIcon: Icon(Icons.person_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
@@ -58,14 +58,14 @@ class _AdminScreenState extends State<AdminScreen> {
             TextField(controller: passwordCtrl, enabled: !isSubmitting, obscureText: true, decoration: const InputDecoration(hintText: 'Password', prefixIcon: Icon(Icons.lock_rounded)), style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: division,
+              initialValue: division,
               items: AppTheme.divisions.map((d) => DropdownMenuItem(value: d, child: Row(children: [
                 Icon(AppColors.getDivisionIcon(d), size: 18, color: AppColors.getDivisionColor(d)),
                 const SizedBox(width: 10), Text(d, style: GoogleFonts.inter(fontSize: 14)),
               ]))).toList(),
               onChanged: isSubmitting ? null : (v) => setSheetState(() => division = v),
               decoration: const InputDecoration(hintText: 'Pilih Divisi', prefixIcon: Icon(Icons.group_rounded)),
-              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+              style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context)),
             ),
             const SizedBox(height: 20),
             SizedBox(width: double.infinity, height: 48, child: ElevatedButton.icon(
@@ -99,21 +99,27 @@ class _AdminScreenState extends State<AdminScreen> {
                 final success = await UserService().createUser(newUser);
                 if (success) {
                   _fetchUsers();
-                  if (mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: const Text('✅ User berhasil ditambahkan'), backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ));
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                  }
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: const Text('✅ User berhasil ditambahkan'), backgroundColor: AppColors.success,
+                      behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ));
+                  }
                 } else {
                   setSheetState(() => isSubmitting = false);
-                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
-                    content: const Text('Gagal menambahkan user'), backgroundColor: AppColors.danger,
-                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ));
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(
+                      content: const Text('Gagal menambahkan user'), backgroundColor: AppColors.danger,
+                      behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ));
+                  }
                 }
               },
               icon: isSubmitting
-                ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                ? SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                 : const Icon(Icons.person_add_rounded, size: 18),
               label: Text(isSubmitting ? 'Menyimpan...' : 'Tambah User', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
             )),
@@ -147,10 +153,37 @@ class _AdminScreenState extends State<AdminScreen> {
     ));
   }
 
+  void _confirmResetPassword(AppUser user) {
+    showDialog(context: context, builder: (ctx) => AlertDialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: Text('Reset Password?', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
+      content: Text('Yakin ingin mereset password ${user.name} menjadi "password"?', style: GoogleFonts.inter(fontSize: 14)),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(ctx), child: Text('Batal', style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
+        ElevatedButton(
+          onPressed: () async { 
+            Navigator.pop(ctx);
+            final success = await UserService().resetPassword(user.id);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text(success ? '✅ Password berhasil direset menjadi "password"' : 'Gagal mereset password'),
+                backgroundColor: success ? AppColors.success : AppColors.danger,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              ));
+            }
+          },
+          style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
+          child: Text('Reset', style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        ),
+      ],
+    ));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+      return Scaffold(backgroundColor: AppColors.backgroundOf(context), body: Center(child: CircularProgressIndicator()));
     }
     
     final users = _users;
@@ -160,11 +193,11 @@ class _AdminScreenState extends State<AdminScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text('Kelola User', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface, surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceOf(context), surfaceTintColor: Colors.transparent,
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _showAddUser, backgroundColor: AppColors.primary, foregroundColor: Colors.white,
@@ -178,25 +211,32 @@ class _AdminScreenState extends State<AdminScreen> {
             gradient: const LinearGradient(colors: [AppColors.primary, AppColors.primaryLight]),
             borderRadius: BorderRadius.circular(16),
           ),
-          child: Row(children: [
-            Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.people_rounded, color: Colors.white, size: 24)),
-            const SizedBox(width: 14),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Total User', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
-              Text('${users.length}', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              Container(padding: const EdgeInsets.all(10), decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.people_rounded, color: Colors.white, size: 24)),
+              const SizedBox(width: 14),
+              Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                Text('Total User', style: GoogleFonts.inter(fontSize: 12, color: Colors.white70)),
+                Text('${users.length}', style: GoogleFonts.inter(fontSize: 28, fontWeight: FontWeight.w800, color: Colors.white)),
+              ]),
             ]),
-            const Spacer(),
-            ...AppTheme.divisions.map((d) {
-              final count = users.where((u) => u.division == d).length;
-              return Padding(
-                padding: const EdgeInsets.only(left: 6),
-                child: Container(
-                  width: 32, height: 32,
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: AppTheme.divisions.map((d) {
+                final count = users.where((u) => u.division == d).length;
+                return Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(8)),
-                  child: Center(child: Text('$count', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w700, color: Colors.white))),
-                ),
-              );
-            }),
+                  child: Row(mainAxisSize: MainAxisSize.min, children: [
+                    Icon(AppColors.getDivisionIcon(d), size: 11, color: Colors.white70),
+                    const SizedBox(width: 4),
+                    Text('$count', style: GoogleFonts.inter(fontSize: 11, fontWeight: FontWeight.w700, color: Colors.white)),
+                  ]),
+                );
+              }).toList(),
+            ),
           ]),
         ),
         const SizedBox(height: 20),
@@ -216,7 +256,7 @@ class _AdminScreenState extends State<AdminScreen> {
                   child: Icon(div == 'Semua' ? Icons.admin_panel_settings_rounded : AppColors.getDivisionIcon(div), size: 16, color: color),
                 ),
                 const SizedBox(width: 8),
-                Text(div == 'Semua' ? 'Super Admin' : div, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                Text(div == 'Semua' ? 'Super Admin' : div, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -228,7 +268,7 @@ class _AdminScreenState extends State<AdminScreen> {
             ...divUsers.map((u) => Container(
               margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+              decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderOf(context))),
               child: Row(children: [
                 // Avatar
                 Container(
@@ -239,7 +279,7 @@ class _AdminScreenState extends State<AdminScreen> {
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Text(u.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    Text(u.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context))),
                     if (u.isSuperAdmin) ...[
                       const SizedBox(width: 6),
                       Container(
@@ -249,13 +289,20 @@ class _AdminScreenState extends State<AdminScreen> {
                       ),
                     ],
                   ]),
-                  Text('ID: ${u.id} • ${u.email}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                  Text('ID: ${u.id} • ${u.email}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
                 ])),
-                if (!u.isSuperAdmin)
+                if (!u.isSuperAdmin) ...[
                   IconButton(
+                    tooltip: 'Reset Password',
+                    icon: const Icon(Icons.lock_reset_rounded, size: 20, color: AppColors.primary),
+                    onPressed: () => _confirmResetPassword(u),
+                  ),
+                  IconButton(
+                    tooltip: 'Hapus User',
                     icon: const Icon(Icons.delete_outline_rounded, size: 20, color: AppColors.danger),
                     onPressed: () => _confirmDelete(u),
                   ),
+                ],
               ]),
             )),
             const SizedBox(height: 12),

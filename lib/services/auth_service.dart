@@ -20,7 +20,7 @@ class AuthService {
         Uri.parse('${ApiConfig.baseUrl}/login'),
         headers: await ApiConfig.getHeaders(),
         body: jsonEncode({
-          'login': login,
+          'identity': login,
           'password': password,
         }),
       );

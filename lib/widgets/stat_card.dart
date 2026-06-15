@@ -20,29 +20,42 @@ class StatCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = AppColors.isDark(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(20), // M3 curve
-        border: Border.all(color: AppColors.borderLight, width: 1.5),
+        gradient: LinearGradient(
+          colors: isDark
+              ? [AppColors.surfaceOf(context), AppColors.surfaceOf(context)]
+              : [Colors.white, color.withValues(alpha: 0.03)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: isDark ? color.withValues(alpha: 0.15) : AppColors.borderLightOf(context),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: color.withValues(alpha: 0.05),
+            color: isDark ? Colors.black26 : color.withValues(alpha: 0.08),
             blurRadius: 20, offset: const Offset(0, 8),
-          )
+          ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(12),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.08),
-              borderRadius: BorderRadius.circular(14),
+              gradient: LinearGradient(
+                colors: [color.withValues(alpha: 0.12), color.withValues(alpha: 0.05)],
+                begin: Alignment.topLeft, end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: color, size: 22),
+            child: Icon(icon, color: color, size: 20),
           ),
           const Spacer(),
           FittedBox(
@@ -52,9 +65,9 @@ class StatCard extends StatelessWidget {
               value,
               maxLines: 1,
               style: GoogleFonts.inter(
-                fontSize: 24,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
+                color: AppColors.textPrimaryOf(context),
                 letterSpacing: -0.5,
               ),
             ),
@@ -63,9 +76,9 @@ class StatCard extends StatelessWidget {
           Text(
             label,
             style: GoogleFonts.inter(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: AppColors.textSecondary,
+              color: AppColors.textSecondaryOf(context),
             ),
             maxLines: 1, overflow: TextOverflow.ellipsis,
           ),
@@ -73,7 +86,7 @@ class StatCard extends StatelessWidget {
             const SizedBox(height: 2),
             Text(
               subtitle!,
-              style: GoogleFonts.inter(fontSize: 10, color: AppColors.textMuted),
+              style: GoogleFonts.inter(fontSize: 10, color: AppColors.textMutedOf(context)),
               maxLines: 1, overflow: TextOverflow.ellipsis,
             ),
           ],

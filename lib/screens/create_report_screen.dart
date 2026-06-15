@@ -1,11 +1,11 @@
-import 'package:flutter/material.dart';
+﻿import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
 import '../models/report.dart';
 import '../services/report_service.dart';
 import 'package:file_picker/file_picker.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -74,11 +74,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text('Buat Laporan', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface, surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceOf(context), surfaceTintColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -116,7 +116,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ]))).toList(),
             onChanged: _auth.isSuperAdmin ? (v) => setState(() => _selectedDivision = v) : null,
             decoration: const InputDecoration(hintText: 'Pilih divisi', prefixIcon: Icon(Icons.group_rounded)),
-            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary),
+            style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context)),
           ),
           const SizedBox(height: 16),
 
@@ -126,12 +126,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             onTap: _pickDate,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-              decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+              decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
               child: Row(children: [
-                const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMuted),
+                Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMutedOf(context)),
                 const SizedBox(width: 12),
-                Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
-                const Spacer(), const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted),
+                Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context))),
+                const Spacer(), Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMutedOf(context)),
               ]),
             ),
           ),
@@ -173,7 +173,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 const Icon(Icons.cloud_upload_rounded, size: 32, color: AppColors.primary),
                 const SizedBox(height: 8),
                 Text('Tap untuk upload dokumen', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.primary)),
-                Text('PDF, DOC, XLS, JPG (Max 10MB)', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                Text('PDF, DOC, XLS, JPG (Max 10MB)', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
               ]),
             ),
           ),
@@ -182,11 +182,11 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             Container(
               margin: const EdgeInsets.only(bottom: 6),
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.border)),
+              decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(10), border: Border.all(color: AppColors.borderOf(context))),
               child: Row(children: [
                 const Icon(Icons.insert_drive_file_rounded, size: 18, color: AppColors.primary),
                 const SizedBox(width: 8),
-                Expanded(child: Text(_pickedFileName!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimary))),
+                Expanded(child: Text(_pickedFileName!, style: GoogleFonts.inter(fontSize: 13, color: AppColors.textPrimaryOf(context)))),
                 GestureDetector(onTap: () => setState(() { _pickedFilePath = null; _pickedFileName = null; }),
                   child: const Icon(Icons.close_rounded, size: 18, color: AppColors.danger)),
               ]),
@@ -208,6 +208,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
 
   Widget _label(String text) => Padding(
     padding: const EdgeInsets.only(bottom: 8),
-    child: Text(text, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+    child: Text(text, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context))),
   );
 }

@@ -46,6 +46,18 @@ class UserService {
         Uri.parse('${ApiConfig.baseUrl}/users/$id'),
         headers: await ApiConfig.getHeaders(),
       ).timeout(const Duration(seconds: 10));
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  Future<bool> resetPassword(String id) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/users/$id/reset-password'),
+        headers: await ApiConfig.getHeaders(),
+      ).timeout(const Duration(seconds: 10));
       return response.statusCode == 200;
     } catch (_) {
       return false;

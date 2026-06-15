@@ -6,7 +6,7 @@ import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../widgets/report_card.dart';
 import '../widgets/division_chip.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 import 'report_detail_screen.dart';
 
 class ReportListScreen extends StatefulWidget {
@@ -62,15 +62,15 @@ class _ReportListScreenState extends State<ReportListScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+      return Scaffold(backgroundColor: AppColors.backgroundOf(context), body: Center(child: CircularProgressIndicator(color: AppColors.primary)));
     }
     final filtered = _filteredReports;
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text(_selectedDivision == 'Semua' ? 'Daftar Laporan' : 'Laporan $_selectedDivision', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.surfaceOf(context),
         surfaceTintColor: Colors.transparent,
       ),
       body: Column(children: [
@@ -81,10 +81,10 @@ class _ReportListScreenState extends State<ReportListScreen> {
             onChanged: (v) => setState(() => _searchQuery = v),
             decoration: InputDecoration(
               hintText: 'Cari laporan...',
-              prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textMuted),
-              filled: true, fillColor: AppColors.surface,
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
-              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: const BorderSide(color: AppColors.border)),
+              prefixIcon: Icon(Icons.search_rounded, color: AppColors.textMutedOf(context)),
+              filled: true, fillColor: AppColors.surfaceOf(context),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: AppColors.borderOf(context))),
+              enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(14), borderSide: BorderSide(color: AppColors.borderOf(context))),
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
             ),
             style: GoogleFonts.inter(fontSize: 14),
@@ -112,7 +112,7 @@ class _ReportListScreenState extends State<ReportListScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(children: [
-            Text('${filtered.length} laporan', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
+            Text('${filtered.length} laporan', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textSecondaryOf(context))),
             const Spacer(),
             if (_selectedDivision != 'Semua')
               GestureDetector(
@@ -126,9 +126,9 @@ class _ReportListScreenState extends State<ReportListScreen> {
         Expanded(
           child: filtered.isEmpty
             ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.inbox_rounded, size: 56, color: AppColors.textMuted.withValues(alpha: 0.4)),
+                Icon(Icons.inbox_rounded, size: 56, color: AppColors.textMutedOf(context).withValues(alpha: 0.4)),
                 const SizedBox(height: 12),
-                Text('Tidak ada laporan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+                Text('Tidak ada laporan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textMutedOf(context))),
               ]))
             : ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 16),

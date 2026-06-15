@@ -92,7 +92,11 @@ class Report {
       approvedBy: json['approved_by'],
       approvedAt: json['approved_at'] != null ? DateTime.parse(json['approved_at']) : null,
       rejectionNote: json['rejection_note'],
-      attachments: json['attachments'] != null ? List<String>.from(json['attachments']) : [],
+      attachments: json['attachments'] != null 
+          ? List<String>.from(json['attachments']) 
+          : (json['attachment'] != null && json['attachment'].toString().isNotEmpty 
+              ? [json['attachment'].toString()] 
+              : []),
     );
   }
 

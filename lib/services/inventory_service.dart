@@ -41,6 +41,36 @@ class InventoryService {
     }
   }
 
+  Future<Lab?> createLab(String name, String description) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConfig.baseUrl}/labs'),
+        headers: await ApiConfig.getHeaders(),
+        body: jsonEncode({'name': name, 'description': description}),
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 201) {
+        final data = jsonDecode(response.body)['data'];
+        return Lab.fromJson(data);
+      }
+      return null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<bool> deleteLab(String labId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseUrl}/labs/$labId'),
+        headers: await ApiConfig.getHeaders(),
+      ).timeout(const Duration(seconds: 10));
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      return false;
+    }
+  }
+
   Future<List<UserBasic>> getInventoryUsers() async {
     try {
       final response = await http.get(

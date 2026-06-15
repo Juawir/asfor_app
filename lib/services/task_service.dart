@@ -59,4 +59,17 @@ class TaskService {
       return false;
     }
   }
+
+  /// Delete a task
+  Future<bool> deleteTask(String id) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConfig.baseUrl}/tasks/$id'),
+        headers: await ApiConfig.getHeaders(),
+      );
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (_) {
+      return false;
+    }
+  }
 }

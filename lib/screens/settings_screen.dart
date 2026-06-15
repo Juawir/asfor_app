@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 import '../services/auth_service.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -96,11 +96,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
     final divColor = user.isSuperAdmin ? AppColors.primary : AppColors.getDivisionColor(user.division);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text('Pengaturan Akun', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface,
+        backgroundColor: AppColors.surfaceOf(context),
         surfaceTintColor: Colors.transparent,
       ),
       body: ListView(padding: const EdgeInsets.all(16), children: [
@@ -123,7 +123,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             const SizedBox(height: 12),
             Text(user.name, style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: Colors.white)),
             const SizedBox(height: 4),
-            Text('${user.email}', style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
+            Text(user.email, style: GoogleFonts.inter(fontSize: 13, color: Colors.white70)),
             const SizedBox(height: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -139,9 +139,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
         const SizedBox(height: 8),
         _infoCard([
           _infoTile('ID Anggota', user.id, Icons.badge_rounded),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.borderOf(context)),
           _infoTile('Divisi', user.division, Icons.group_rounded),
-          const Divider(height: 1, color: AppColors.border),
+          Divider(height: 1, color: AppColors.borderOf(context)),
           _infoTile('Role', user.roleLabel, Icons.shield_rounded),
         ]),
         const SizedBox(height: 20),
@@ -163,9 +163,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ]),
                 ])
               : Row(children: [
-                  const Icon(Icons.person_rounded, size: 20, color: AppColors.textMuted),
+                  Icon(Icons.person_rounded, size: 20, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 12),
-                  Expanded(child: Text(user.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimary))),
+                  Expanded(child: Text(user.name, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w500, color: AppColors.textPrimaryOf(context)))),
                   TextButton(onPressed: () => setState(() => _editingName = true), child: Text('Edit', style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
                 ]),
           ),
@@ -193,9 +193,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ]),
                 ])
               : Row(children: [
-                  const Icon(Icons.lock_rounded, size: 20, color: AppColors.textMuted),
+                  Icon(Icons.lock_rounded, size: 20, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 12),
-                  Expanded(child: Text('••••••••', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary))),
+                  Expanded(child: Text('••••••••', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context)))),
                   TextButton(onPressed: () => setState(() => _changingPassword = true), child: Text('Ubah', style: GoogleFonts.inter(fontWeight: FontWeight.w600))),
                 ]),
           ),
@@ -205,21 +205,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _sectionTitle(String text) => Text(text, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary));
+  Widget _sectionTitle(String text) => Text(text, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context)));
 
   Widget _infoCard(List<Widget> children) => Container(
-    decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+    decoration: BoxDecoration(
+      color: AppColors.surfaceOf(context),
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.borderOf(context)),
+      boxShadow: [BoxShadow(color: AppColors.cardShadowOf(context), blurRadius: 8, offset: const Offset(0, 2))],
+    ),
     child: Column(children: children),
   );
 
   Widget _infoTile(String label, String value, IconData icon) => Padding(
     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
     child: Row(children: [
-      Icon(icon, size: 20, color: AppColors.textMuted),
+      Icon(icon, size: 20, color: AppColors.textMutedOf(context)),
       const SizedBox(width: 12),
       Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
-        Text(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+        Text(label, style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
+        Text(value, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context))),
       ])),
     ]),
   );

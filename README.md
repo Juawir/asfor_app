@@ -11,7 +11,7 @@ ASFOR adalah aplikasi manajemen internal berbasis mobile (Flutter) yang dirancan
 - **Role Isolation**: 
   - **User**: Hanya dapat melihat data (Laporan & Task) milik divisinya sendiri.
   - **Super Admin**: Memiliki kontrol penuh atas semua divisi, dapat mengelola user, dan melihat semua laporan.
-- **Division Tags**: Identitas divisi yang melekat pada profil (Programmer, Humas, IT Support, Training, Bidang Usaha).
+- **Division Tags**: Identitas divisi yang melekat pada profil (Programmer, Humas, IT Support, Training, Bidang Usaha, Badan Pengurus Harian).
 
 ### 2. Dashboard Pintar
 - **Personalized Greeting**: Menyapa user secara personal berdasarkan nama.
@@ -41,7 +41,8 @@ ASFOR adalah aplikasi manajemen internal berbasis mobile (Flutter) yang dirancan
 - **Candidate Management**: Admin dapat membuat pemilihan dan menambah kandidat dari seluruh anggota divisi.
 
 ### 7. UI / UX Premium
-- **Modern UI**: Menggunakan gradasi warna halus, efek bayangan melayang (3D), dan animasi navigasi.
+- **Adaptive Theme**: Dukungan penuh untuk *Dark Mode* dan *Light Mode* yang otomatis menyesuaikan dengan pengaturan sistem HP.
+- **Modern UI**: Menggunakan gradasi warna halus, efek bayangan melayang (3D), *glassmorphism*, dan animasi navigasi.
 - **Sidebar Navigation (Drawer)**: Menu navigasi samping yang bersih dengan profil user di bagian header.
 - **Material 3 Design**: Dukungan sudut membulat untuk dialog, pop-up, dan notifikasi (snackbar).
 
@@ -73,14 +74,24 @@ lib/
 
 Pastikan aplikasi terhubung ke internet saat mencoba akun ini karena memanggil REST API asli.
 
-| Role | Email | Password | Divisi |
+| Role | Email / Username | Password | Divisi |
 | :--- | :--- | :--- | :--- |
-| **Super Admin** | `admin@example.com` | `password` | Semua |
+| **Super Admin** | `admin` | `password` | Semua |
+| **BPH (Admin)** | `bph1`, `bph2`, `bph3` | `password` | Badan Pengurus Harian |
+| **User** | `budi` | `password` | IT Support |
+---
+
+---
+
+## 🚀 Deployment & Build
+
+Untuk panduan lengkap mengenai cara melakukan build APK atau mendeploy aplikasi ke web, silakan baca:
+👉 **[DEPLOYMENT.md](DEPLOYMENT.md)**
+
 ---
 
 ## 📝 Catatan Pengembangan
-- **API Status**: Saat ini integrasi *Users*, *Tasks*, dan *Auth* sudah menggunakan backend Laravel jarak jauh. 
-- **Election Module**: Fitur pemilihan ketua masih menggunakan penyimpanan *Local Storage (SharedPreferences)* dan dapat dialihkan ke API secara mulus jika endpoint `/elections` sudah tersedia di Laravel.
+- **API Status**: Semua integrasi data (*Users*, *Tasks*, *Auth*, dan *Elections*) telah sepenuhnya terhubung dengan backend RESTful API Laravel secara real-time.
 
 ---
 

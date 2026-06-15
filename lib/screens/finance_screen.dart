@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../models/income.dart';
 import '../services/finance_service.dart';
-import 'main_screen.dart' show mainScaffoldKey;
+import 'main_screen.dart' show buildMenuButton;
 
 class FinanceScreen extends StatefulWidget {
   const FinanceScreen({super.key});
@@ -109,15 +109,15 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         final accentColor = isIncome ? AppColors.success : AppColors.danger;
         return Container(
           padding: EdgeInsets.fromLTRB(20, 16, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
-          decoration: const BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
           child: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.border, borderRadius: BorderRadius.circular(4)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.borderOf(context), borderRadius: BorderRadius.circular(4)))),
             const SizedBox(height: 16),
-            Text('Tambah Transaksi', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+            Text('Tambah Transaksi', style: GoogleFonts.inter(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
             const SizedBox(height: 16),
             // Type toggle
             Container(
-              decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+              decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
               child: Row(children: FinanceType.values.map((t) {
                 final sel = txType == t;
                 final c = t == FinanceType.income ? AppColors.success : AppColors.danger;
@@ -127,9 +127,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     decoration: BoxDecoration(color: sel ? c.withValues(alpha: 0.12) : Colors.transparent, borderRadius: BorderRadius.circular(11)),
                     child: Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                      Icon(t == FinanceType.income ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, size: 16, color: sel ? c : AppColors.textMuted),
+                      Icon(t == FinanceType.income ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded, size: 16, color: sel ? c : AppColors.textMutedOf(context)),
                       const SizedBox(width: 6),
-                      Text(t.label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: sel ? c : AppColors.textMuted)),
+                      Text(t.label, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: sel ? c : AppColors.textMutedOf(context))),
                     ]),
                   ),
                 ));
@@ -141,7 +141,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               style: GoogleFonts.inter(fontSize: 14)),
             const SizedBox(height: 12),
             DropdownButtonFormField<IncomeCategory>(
-              value: category,
+              initialValue: category,
               items: IncomeCategory.values.map((c) => DropdownMenuItem(value: c, child: Text(c.categoryLabel, style: GoogleFonts.inter(fontSize: 14)))).toList(),
               onChanged: isSubmitting ? null : (v) => setSheetState(() => category = v!),
               decoration: const InputDecoration(prefixIcon: Icon(Icons.category_rounded)),
@@ -154,12 +154,12 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-                decoration: BoxDecoration(color: AppColors.surfaceAlt, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: AppColors.surfaceAltOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
                 child: Row(children: [
-                  const Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMuted),
+                  Icon(Icons.calendar_today_rounded, size: 18, color: AppColors.textMutedOf(context)),
                   const SizedBox(width: 12),
-                  Text(DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDate), style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimary)),
-                  const Spacer(), const Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMuted),
+                  Text(DateFormat('dd MMMM yyyy', 'id_ID').format(selectedDate), style: GoogleFonts.inter(fontSize: 14, color: AppColors.textPrimaryOf(context))),
+                  const Spacer(), Icon(Icons.arrow_drop_down_rounded, color: AppColors.textMutedOf(context)),
                 ]),
               ),
             ),
@@ -180,14 +180,20 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                 final ok = await FinanceService().createFinance(tx);
                 if (ok) {
                   _fetchIncomes();
-                  if (mounted) Navigator.pop(ctx);
-                  if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                    content: Text('✅ ${txType.label} berhasil ditambahkan'), backgroundColor: accentColor,
-                    behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  ));
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                  }
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      content: Text('✅ ${txType.label} berhasil ditambahkan'), backgroundColor: accentColor,
+                      behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ));
+                  }
                 } else {
                   setSheetState(() => isSubmitting = false);
-                  if (mounted) ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('Gagal menyimpan'), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+                  if (ctx.mounted) {
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: const Text('Gagal menyimpan'), backgroundColor: AppColors.danger, behavior: SnackBarBehavior.floating, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))));
+                  }
                 }
               },
               icon: isSubmitting ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.save_rounded, size: 18),
@@ -203,22 +209,22 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(backgroundColor: AppColors.background, body: Center(child: CircularProgressIndicator()));
+      return Scaffold(backgroundColor: AppColors.backgroundOf(context), body: Center(child: CircularProgressIndicator()));
     }
     
     final monthPct = _pctChange(monthIncome, lastMonthIncome);
     final yearPct = _pctChange(yearIncome, lastYearIncome);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: AppColors.backgroundOf(context),
       appBar: AppBar(
-        leading: IconButton(icon: const Icon(Icons.menu_rounded), onPressed: () => mainScaffoldKey.currentState?.openDrawer()),
+        leading: buildMenuButton(context),
         title: Text('Keuangan', style: GoogleFonts.inter(fontWeight: FontWeight.w700)),
-        backgroundColor: AppColors.surface, surfaceTintColor: Colors.transparent,
+        backgroundColor: AppColors.surfaceOf(context), surfaceTintColor: Colors.transparent,
         bottom: TabBar(
           controller: _tabCtrl,
           labelStyle: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
-          unselectedLabelColor: AppColors.textMuted, labelColor: AppColors.primary,
+          unselectedLabelColor: AppColors.textMutedOf(context), labelColor: AppColors.primary,
           indicatorColor: AppColors.primary, indicatorSize: TabBarIndicatorSize.label,
           tabs: const [Tab(text: 'Ringkasan'), Tab(text: 'Transaksi'), Tab(text: 'Perbandingan')],
         ),
@@ -302,17 +308,17 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       const SizedBox(height: 20),
 
       // Monthly bar chart
-      Text('Saldo 6 Bulan Terakhir', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Saldo 6 Bulan Terakhir', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
       const SizedBox(height: 12),
       Container(
         padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+        decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.borderOf(context))),
         child: _buildBarChart(),
       ),
       const SizedBox(height: 20),
 
       // Category breakdown
-      Text('Kategori Bulan Ini', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Kategori Bulan Ini', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
       const SizedBox(height: 12),
       ...categories.entries.map((e) {
         final color = _catColor(e.key);
@@ -320,17 +326,17 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderOf(context))),
           child: Column(children: [
             Row(children: [
               Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                 child: Icon(_catIcon(e.key), size: 18, color: color)),
               const SizedBox(width: 12),
-              Expanded(child: Text(e.key.categoryLabel, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
+              Expanded(child: Text(e.key.categoryLabel, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)))),
               Text(fmt.format(e.value), style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: color)),
             ]),
             const SizedBox(height: 8),
-            ClipRRect(borderRadius: BorderRadius.circular(50), child: LinearProgressIndicator(value: pct, minHeight: 6, backgroundColor: AppColors.border, valueColor: AlwaysStoppedAnimation(color))),
+            ClipRRect(borderRadius: BorderRadius.circular(50), child: LinearProgressIndicator(value: pct, minHeight: 6, backgroundColor: AppColors.borderOf(context), valueColor: AlwaysStoppedAnimation(color))),
           ]),
         );
       }),
@@ -365,7 +371,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         ]),
         const SizedBox(height: 12),
         if (filtered.isEmpty)
-          Padding(padding: const EdgeInsets.only(top: 40), child: Center(child: Text('Belum ada transaksi', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMuted)))),
+          Padding(padding: const EdgeInsets.only(top: 40), child: Center(child: Text('Belum ada transaksi', style: GoogleFonts.inter(fontSize: 14, color: AppColors.textMutedOf(context))))),
         ...grouped.entries.map((entry) {
           final dayIncome = entry.value.where((i) => i.isIncome).fold(0.0, (s, i) => s + i.amount);
           final dayExpense = entry.value.where((i) => i.isExpense).fold(0.0, (s, i) => s + i.amount);
@@ -375,7 +381,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 8),
               child: Row(children: [
-                Text(entry.key, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                Text(entry.key, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textSecondaryOf(context))),
                 const Spacer(),
                 Text('${dayNet >= 0 ? '+' : ''}${fmt.format(dayNet)}', style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: netColor)),
               ]),
@@ -385,7 +391,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
               return Container(
                 margin: const EdgeInsets.only(bottom: 8),
                 padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.border)),
+                decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppColors.borderOf(context))),
                 child: Row(children: [
                   Container(
                     padding: const EdgeInsets.all(8),
@@ -394,8 +400,8 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
                   ),
                   const SizedBox(width: 12),
                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                    Text(item.description, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
-                    Text('${item.categoryLabel} • ${item.type.label}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
+                    Text(item.description, style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)), maxLines: 1, overflow: TextOverflow.ellipsis),
+                    Text('${item.categoryLabel} • ${item.type.label}', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
                   ])),
                   Text('${item.isExpense ? '-' : '+'}${fmt.format(item.amount)}', style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w700, color: txColor)),
                 ]),
@@ -415,11 +421,11 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: sel ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surfaceAlt,
+          color: sel ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surfaceAltOf(context),
           borderRadius: BorderRadius.circular(50),
-          border: Border.all(color: sel ? AppColors.primary : AppColors.border),
+          border: Border.all(color: sel ? AppColors.primary : AppColors.borderOf(context)),
         ),
-        child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? AppColors.primary : AppColors.textMuted)),
+        child: Text(label, style: GoogleFonts.inter(fontSize: 12, fontWeight: FontWeight.w600, color: sel ? AppColors.primary : AppColors.textMutedOf(context))),
       ),
     );
   }
@@ -428,7 +434,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
   Widget _buildComparison(double monthPct, double yearPct) {
     return ListView(padding: const EdgeInsets.all(16), children: [
       // Month comparison
-      Text('Perbandingan Bulanan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Perbandingan Bulanan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
       const SizedBox(height: 12),
       _comparisonCard(
         label1: 'Bulan Ini', value1: monthIncome,
@@ -438,7 +444,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       const SizedBox(height: 20),
 
       // Year comparison
-      Text('Perbandingan Tahunan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Perbandingan Tahunan', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
       const SizedBox(height: 12),
       _comparisonCard(
         label1: 'Tahun Ini', value1: yearIncome,
@@ -448,9 +454,9 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
       const SizedBox(height: 20),
 
       // Category comparison this month vs last month
-      Text('Perbandingan Kategori', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+      Text('Perbandingan Kategori', style: GoogleFonts.inter(fontSize: 15, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
       const SizedBox(height: 4),
-      Text('Bulan ini vs bulan lalu', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+      Text('Bulan ini vs bulan lalu', style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
       const SizedBox(height: 12),
       ...IncomeCategory.values.map((cat) {
         final thisMonth = _inRange(_startOfMonth, _today).where((i) => i.category == cat).fold(0.0, (s, i) => s + i.amount);
@@ -460,25 +466,25 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
         return Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.border)),
+          decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(14), border: Border.all(color: AppColors.borderOf(context))),
           child: Column(children: [
             Row(children: [
               Container(padding: const EdgeInsets.all(8), decoration: BoxDecoration(color: color.withValues(alpha: 0.12), borderRadius: BorderRadius.circular(10)),
                 child: Icon(_catIcon(cat), size: 18, color: color)),
               const SizedBox(width: 12),
-              Expanded(child: Text(cat.categoryLabel, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary))),
+              Expanded(child: Text(cat.categoryLabel, style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimaryOf(context)))),
               _pctBadge(pct),
             ]),
             const SizedBox(height: 12),
             Row(children: [
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Bulan ini', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
-                Text(fmt.format(thisMonth), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimary)),
+                Text('Bulan ini', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
+                Text(fmt.format(thisMonth), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textPrimaryOf(context))),
               ])),
-              Container(width: 1, height: 30, color: AppColors.border),
+              Container(width: 1, height: 30, color: AppColors.borderOf(context)),
               Expanded(child: Padding(padding: const EdgeInsets.only(left: 16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                Text('Bulan lalu', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMuted)),
-                Text(fmt.format(lastMonth), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondary)),
+                Text('Bulan lalu', style: GoogleFonts.inter(fontSize: 11, color: AppColors.textMutedOf(context))),
+                Text(fmt.format(lastMonth), style: GoogleFonts.inter(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.textSecondaryOf(context))),
               ]))),
             ]),
           ]),
@@ -494,7 +500,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     final c = color ?? AppColors.primary;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.borderOf(context))),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(icon, size: 18, color: c),
@@ -502,7 +508,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
           _pctBadge(pct),
         ]),
         const SizedBox(height: 10),
-        Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+        Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
         const SizedBox(height: 4),
         Text(fmt.format(value), style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: c)),
       ]),
@@ -528,18 +534,18 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
     final diff = value1 - value2;
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.border)),
+      decoration: BoxDecoration(color: AppColors.surfaceOf(context), borderRadius: BorderRadius.circular(16), border: Border.all(color: AppColors.borderOf(context))),
       child: Column(children: [
         Row(children: [
           Expanded(child: _compCol(label1, value1, AppColors.primary)),
           Padding(padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Column(children: [
-              Icon(Icons.compare_arrows_rounded, size: 24, color: AppColors.textMuted),
+              Icon(Icons.compare_arrows_rounded, size: 24, color: AppColors.textMutedOf(context)),
               const SizedBox(height: 4),
               _pctBadge(pctChange),
             ]),
           ),
-          Expanded(child: _compCol(label2, value2, AppColors.textSecondary)),
+          Expanded(child: _compCol(label2, value2, AppColors.textSecondaryOf(context))),
         ]),
         const SizedBox(height: 16),
         Container(
@@ -558,7 +564,7 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   Widget _compCol(String label, double value, Color color) {
     return Column(children: [
-      Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMuted)),
+      Text(label, style: GoogleFonts.inter(fontSize: 12, color: AppColors.textMutedOf(context))),
       const SizedBox(height: 6),
       Text(fmt.format(value), style: GoogleFonts.inter(fontSize: 16, fontWeight: FontWeight.w800, color: color)),
     ]);
@@ -566,30 +572,42 @@ class _FinanceScreenState extends State<FinanceScreen> with SingleTickerProvider
 
   Widget _buildBarChart() {
     final data = _monthlyTotals;
-    final maxVal = data.map((e) => e.value).fold(0.0, (a, b) => a > b ? a : b);
+    final maxVal = data.map((e) => e.value.abs()).fold(0.0, (a, b) => a > b ? a : b);
 
     return SizedBox(
       height: 160,
       child: Row(crossAxisAlignment: CrossAxisAlignment.end, children: data.asMap().entries.map((entry) {
         final i = entry.key;
         final e = entry.value;
-        final h = maxVal > 0 ? (e.value / maxVal * 120) : 0.0;
+        final isNegative = e.value < 0;
+        final absValue = e.value.abs();
+        final h = maxVal > 0 ? (absValue / maxVal * 120) : 0.0;
         final isLast = i == data.length - 1;
+        
+        Color barColor;
+        if (isNegative) {
+           barColor = isLast ? AppColors.danger : AppColors.danger.withValues(alpha: 0.3);
+        } else {
+           barColor = isLast ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3);
+        }
+
         return Expanded(child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
           child: Column(mainAxisAlignment: MainAxisAlignment.end, children: [
             Text(fmt.format(e.value).replaceAll('Rp ', '').replaceAll('.000', 'K').replaceAll('.', ''),
-              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textMuted)),
+              style: GoogleFonts.inter(fontSize: 9, fontWeight: FontWeight.w600, color: isNegative ? AppColors.danger : AppColors.textMutedOf(context)),
+              maxLines: 1, overflow: TextOverflow.ellipsis,
+            ),
             const SizedBox(height: 4),
             Container(
               height: h, width: double.infinity,
               decoration: BoxDecoration(
-                color: isLast ? AppColors.primary : AppColors.primary.withValues(alpha: 0.3),
+                color: barColor,
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
             const SizedBox(height: 6),
-            Text(e.key, style: GoogleFonts.inter(fontSize: 11, fontWeight: isLast ? FontWeight.w700 : FontWeight.w500, color: isLast ? AppColors.primary : AppColors.textMuted)),
+            Text(e.key, style: GoogleFonts.inter(fontSize: 11, fontWeight: isLast ? FontWeight.w700 : FontWeight.w500, color: isLast ? AppColors.primary : AppColors.textMutedOf(context))),
           ]),
         ));
       }).toList()),
